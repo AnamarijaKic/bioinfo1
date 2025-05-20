@@ -106,6 +106,61 @@ void printBasicStatisticFASTA(string file){
     // }
 }
 
+void printBasicStatisticFASTQ(string file){
+    auto p = bioparser::Parser<SequenceFASTQ>::Create<bioparser::FastqParser>(file);
+    
+    // parse in chunks
+    std::vector<std::unique_ptr<SequenceFASTQ>> s;
+    while (true) {
+    auto c = p->Parse(1ULL << 30);  // 1 GB
+    if (c.empty()) {
+        break;
+    }
+    s.insert(
+        s.end(),
+        std::make_move_iterator(c.begin()),
+        std::make_move_iterator(c.end()));
+    }
+
+    size_t totalNumberOfBases = 0;
+    size_t totalNumberOfSequences = 0;
+    size_t maxLength = 0;
+    size_t minLength = SIZE_MAX;
+    vector<size_t> allLengths;
+    for (const auto& seq : s){
+        size_t size = seq->sequence().size();
+
+        allLengths.push_back(size);
+        totalNumberOfBases += size;
+        totalNumberOfSequences +=1;
+
+        cout<<"SequenceFASTQ name: "<<seq->name()<<endl;
+        cout<<"Length of sequence: "<<size<<endl;
+
+        if (maxLength<size){ maxLength = size; }
+        if (minLength>size){ minLength = size; }            
+    }
+        
+    cout << "Total number of sequences: " << totalNumberOfSequences << endl;
+    cout << "Average length of sequences: " << totalNumberOfBases/totalNumberOfSequences << endl;
+    cout << "Maximal length of sequence: " << maxLength <<endl;
+    cout << "Minimal length of sequence: " << minLength <<endl;
+    // std::cout << "Total bases: " << totalNumberOfBases << std::endl;
+
+    // N50 value
+    size_t cumulativeSum = 0;
+    sort(allLengths.begin(), allLengths.end());
+    for (size_t currentLength : allLengths){
+        cumulativeSum += currentLength;
+        if (cumulativeSum >= (totalNumberOfBases/2)){
+            cout << "N50 length: " << currentLength <<endl;
+            break;
+        }
+    }
+
+        
+    // }
+}
 
 
 int main(int argc, char* argv[]) {
@@ -271,11 +326,10 @@ int main(int argc, char* argv[]) {
 
 
     }
-    
-    
-    
-    
-    
+
+    if(isFastq){
+        printBasicStatisticFASTQ(file2);
+    }
     
 
 
