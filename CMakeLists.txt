@@ -8,8 +8,14 @@ set(CMAKE_CXX_STANDARD 11)
 add_library(team_alignment 
     team_alignment/team_alignment.cpp
     team_alignment/team_alignment.hpp)
+# Add the minimizers library
+add_library(team_minimizers
+    team_minimizers/team_minimizers.cpp
+    team_minimizers/team_minimizers.hpp)
+
 
 target_include_directories(team_alignment PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/team_alignment )
+target_include_directories(team_minimizers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/team_minimizers)
 
 # Add include path for bioparser
 include_directories(${CMAKE_SOURCE_DIR}/bioparser/include)
@@ -22,9 +28,15 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 # Define the executable before linking libraries
 add_executable(${PROJECT_NAME} team_mapper.cpp)
 
+
 # Link the alignment library to the mapper
 target_link_libraries(${PROJECT_NAME} PRIVATE team_alignment)
-
+# Link the minimizers library to the mapper
+target_link_libraries(${PROJECT_NAME} PRIVATE team_minimizers)
 # Now link libraries to the target
 target_link_libraries(${PROJECT_NAME} PRIVATE ${ZLIB_LIBRARIES})
+
+
+
+
 
