@@ -156,7 +156,7 @@ namespace team {
                     // *cigar = compressed;
                 }
                 
-                printAlignmentMatrix(query, query_len, target, target_len, m);
+                // printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
 
                 break;
@@ -209,7 +209,7 @@ namespace team {
                     *target_begin = local_j + 1; // ************************KAJ JE OV TOČNO********************************************************+
                 }
 
-                printAlignmentMatrix(query, query_len, target, target_len, m);
+                // printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                             
                 break;
@@ -269,7 +269,7 @@ namespace team {
                     *cigar = result;
                 }
                 
-                printAlignmentMatrix(query, query_len, target, target_len, m);
+                // printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                 break;
             
