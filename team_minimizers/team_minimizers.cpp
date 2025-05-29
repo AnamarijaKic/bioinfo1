@@ -89,11 +89,11 @@ namespace team {
 
             window.push_back(make_tuple(min_kmer, i+1, is_fwd));
 
-            cout<<kmer<<std::endl;
+            /*cout<<kmer<<std::endl;
             cout<<mapp_fwd<<std::endl;
             cout<<rc_kmer<<std::endl;
             cout<<mapp_rev<<std::endl;
-            cout<<endl;
+            cout<<endl;*/
         }
 
         minimizers.push_back(GetTupleWithMinFirst(window));
@@ -114,11 +114,11 @@ namespace team {
 
             minimizers.push_back(GetTupleWithMinFirst(window));
 
-            cout<<kmer<<std::endl;
+            /*cout<<kmer<<std::endl;
             cout<<mapp_fwd<<std::endl;
             cout<<rc_kmer<<std::endl;
             cout<<mapp_rev<<std::endl;
-            cout<<endl;
+            cout<<endl;*/
         }
 
         return minimizers;
