@@ -15,11 +15,17 @@ namespace team {
     string MappKmerBitToString(unsigned int kmer, unsigned int kmer_len){
         std::string mapp(kmer_len, 'X');
         // Value mapping for positions (original order)
+        // unordered_map<unsigned int, char> base_value = {
+        //     {0,'C'},
+        //     {1,'A'},
+        //     {2,'T'},
+        //     {3,'G'}
+        // };
         unordered_map<unsigned int, char> base_value = {
-            {0,'C'},
-            {1,'A'},
-            {2,'T'},
-            {3,'G'}
+            {0,'0'},
+            {1,'1'},
+            {2,'2'},
+            {3,'3'}
         };
 
         for (int i = kmer_len - 1; i >= 0; --i){
@@ -167,17 +173,24 @@ namespace team {
         vector<tuple<unsigned int, unsigned int, bool>> minimizers;
 
         // Sequence and reverse sequence in string format (but WITH letters for bases)
-        // string sequence_str(sequence, sequence_len);
-        // string rc_sequence_str = ReverseComplement(sequence_str);
+        string sequence_str(sequence, sequence_len);
+        string rc_sequence_str = ReverseComplement(sequence_str);
+        const char* rc_sequence = rc_sequence_str.c_str();
+
+        // cout<<"SEKVENCE!!!"<<endl;
+        // cout<<sequence<<endl;
+        // cout<<MappKmerStringToString(sequence)<<endl;
+        // cout<<rc_sequence_str<<endl;
+        // cout<<MappKmerStringToString(rc_sequence_str)<<endl;
 
         // Sequence and reverse sequence in number format (but 2 bits for one base)
         // unsigned int mapp_seq_fwd_bit = MappKmerStringToBit(sequence_str);
         // unsigned int mapp_seq_rev_bit = MappKmerStringToBit(rc_sequence_str);
 
-        // Sequence and reverse sequence gotten from char* in number format (but 2 bits for one base)
-        unsigned int mapp_seq_fwd_bit = MappSeqCharPointerToBit(sequence);
-        unsigned int mapp_seq_rev_bit = ReverseComplementSeqCharPointerToBit(sequence, sequence_len);
-       
+        // Sequence and reverse sequence gotten from char* in number format (but 2 bits for one base) OVO SAM ZADNJE ZAKOMENTIRALA *******************
+        // unsigned int mapp_seq_fwd_bit = MappSeqCharPointerToBit(sequence);
+        // unsigned int mapp_seq_rev_bit = ReverseComplementSeqCharPointerToBit(sequence, sequence_len);
+
 
         if (sequence_len < kmer_len || window_len == 0) return minimizers;
        
@@ -186,13 +199,21 @@ namespace team {
     
 
         // BEGINING -> end-minimizer:
-        for(unsigned int u=kmer_len; u<window_len;u++){
+        for(unsigned int u=kmer_len; u<(window_len+kmer_len-1);u++){
             deque<tuple<unsigned int, unsigned int, bool>> end_window;
             for (unsigned int i = 0; i <= u-kmer_len; i++){
                 // unsigned int mapp_fwd_bit = ExtractKmer(mapp_seq_fwd_bit, sequence_len-kmer_len-i, kmer_len);
                 // unsigned int mapp_rev_bit = ExtractKmer(mapp_seq_rev_bit, i, kmer_len);
-                unsigned int mapp_fwd_bit = ExtractKmerWithMask(mapp_seq_fwd_bit, sequence_len-kmer_len-i, mask);
-                unsigned int mapp_rev_bit = ExtractKmerWithMask(mapp_seq_rev_bit, i, mask);
+
+                // unsigned int mapp_fwd_bit = ExtractKmerWithMask(mapp_seq_fwd_bit, sequence_len-kmer_len-i, mask);
+                // unsigned int mapp_rev_bit = ExtractKmerWithMask(mapp_seq_rev_bit, i, mask);
+
+                string mapp_fwd_str(sequence+i, kmer_len);
+                string mapp_rev_str(rc_sequence+sequence_len-kmer_len-i, kmer_len);
+
+                unsigned int mapp_fwd_bit = MappKmerStringToBit(mapp_fwd_str);
+                unsigned int mapp_rev_bit = MappKmerStringToBit(mapp_rev_str);
+
 
                 unsigned int min_kmer = min(mapp_fwd_bit, mapp_rev_bit);
                 bool is_fwd = (min_kmer == mapp_fwd_bit);
@@ -208,8 +229,15 @@ namespace team {
             
             // unsigned int mapp_fwd_bit = ExtractKmer(mapp_seq_fwd_bit, sequence_len-kmer_len-i, kmer_len);
             // unsigned int mapp_rev_bit = ExtractKmer(mapp_seq_rev_bit, i, kmer_len);
-            unsigned int mapp_fwd_bit = ExtractKmerWithMask(mapp_seq_fwd_bit, sequence_len-kmer_len-i, mask);
-            unsigned int mapp_rev_bit = ExtractKmerWithMask(mapp_seq_rev_bit, i, mask);
+
+            // unsigned int mapp_fwd_bit = ExtractKmerWithMask(mapp_seq_fwd_bit, sequence_len-kmer_len-i, mask);
+            // unsigned int mapp_rev_bit = ExtractKmerWithMask(mapp_seq_rev_bit, i, mask);
+
+            string mapp_fwd_str(sequence+i, kmer_len);
+            string mapp_rev_str(rc_sequence+sequence_len-kmer_len-i, kmer_len);
+
+            unsigned int mapp_fwd_bit = MappKmerStringToBit(mapp_fwd_str);
+            unsigned int mapp_rev_bit = MappKmerStringToBit(mapp_rev_str);
             
             unsigned int min_kmer = min(mapp_fwd_bit, mapp_rev_bit);
             bool is_fwd = (min_kmer == mapp_fwd_bit);
@@ -218,12 +246,11 @@ namespace team {
 
             if(i>=(window_len-1)){
                 minimizers.push_back(GetTupleWithMinFirst(window)); 
-                auto& za_ispis = GetTupleWithMinFirst(window);
             }
         }
 
         // KRAJ -> end-minimizer:
-        for(unsigned int u=kmer_len; u<window_len;u++){
+        for(unsigned int u=kmer_len; u<(window_len+kmer_len-1);u++){
             if (sequence_len < u) break;
             deque<tuple<unsigned int, unsigned int, bool>> end_window;
             unsigned int start = sequence_len - u;
@@ -231,12 +258,19 @@ namespace team {
             for (unsigned int i = start; i <= sequence_len - kmer_len; ++i){
                 // unsigned int mapp_fwd_bit = ExtractKmer(mapp_seq_fwd_bit, sequence_len-kmer_len-i, kmer_len);
                 // unsigned int mapp_rev_bit = ExtractKmer(mapp_seq_rev_bit, i, kmer_len);
-                unsigned int mapp_fwd_bit = ExtractKmerWithMask(mapp_seq_fwd_bit, sequence_len-kmer_len-i, mask);
-                unsigned int mapp_rev_bit = ExtractKmerWithMask(mapp_seq_rev_bit, i, mask);
+                // unsigned int mapp_fwd_bit = ExtractKmerWithMask(mapp_seq_fwd_bit, sequence_len-kmer_len-i, mask);
+                // unsigned int mapp_rev_bit = ExtractKmerWithMask(mapp_seq_rev_bit, i, mask);
 
+                string mapp_fwd_str(sequence+i, kmer_len);
+                string mapp_rev_str(rc_sequence+sequence_len-kmer_len-i, kmer_len);
+
+                
+                unsigned int mapp_fwd_bit = MappKmerStringToBit(mapp_fwd_str);
+                unsigned int mapp_rev_bit = MappKmerStringToBit(mapp_rev_str);
                 unsigned int min_kmer = min(mapp_fwd_bit, mapp_rev_bit);
                 bool is_fwd = (min_kmer == mapp_fwd_bit);
 
+                
                 end_window.push_back(make_tuple(min_kmer, i+1, is_fwd));
             }
             minimizers.push_back(GetTupleWithMinFirst(end_window));
