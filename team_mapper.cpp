@@ -18,7 +18,7 @@
 using namespace std;
 
 // Mapping from bit shifted values to string
-string MappKmerBitToString(unsigned int kmer, unsigned int kmer_len){
+string MappKmerBitToStringFWD(unsigned int kmer, unsigned int kmer_len){
     std::string mapp(kmer_len, 'X');
     // Value mapping for positions (original order)
     unordered_map<unsigned int, char> base_value = {
@@ -40,9 +40,15 @@ string MappKmerBitToString(unsigned int kmer, unsigned int kmer_len){
 void PrintMinimizersVector(const vector<tuple<unsigned int, unsigned int, bool>>& minimizers, unsigned int k) {
     for (const auto& t : minimizers) {
         unsigned int hash = get<0>(t);
-        string mapp = MappKmerBitToString(hash, k);
-        unsigned int position = get<1>(t);
         bool is_fwd = get<2>(t);
+        string mapp = MappKmerBitToStringFWD(hash, k);
+        // if(is_fwd){
+        //     mapp = MappKmerBitToStringFWD(hash, k);
+        // } else{
+        //     mapp = MappKmerBitToStringREV(hash, k);
+        // }
+        
+        unsigned int position = get<1>(t);
         
         cout << "Hash: " << mapp
              << ", Position: " << position
@@ -218,7 +224,8 @@ void printBasicStatisticFASTQ(string file){
 int main(int argc, char* argv[]) {
     team::AlignmentType align_type_;
     int match = 1, mismatch = -1, gap = -1;
-    int k = 15, w = 5, f = 0.001;
+    int k = 15, w = 5;
+    double f = 0.001;
     string file1, file2;
 
     if (argc < 2) {
@@ -370,9 +377,9 @@ int main(int argc, char* argv[]) {
         cout << "Second random index: " << index2 << " -> " << seq2->name() << "\n";
 
        
-        std::string cigar;
-        unsigned int target_begin;
-        // trebam svaku od ovih seq1 i seq2 pripasati k pravoj referenci***********************************************************************************************************+
+        // std::string cigar;
+        // unsigned int target_begin;
+        // // trebam svaku od ovih seq1 i seq2 pripasati k pravoj referenci***********************************************************************************************************+
         // int score = team::Align(
         //     seq1->data().c_str(), seq1->data().length(),
         //     seq2->data().c_str(), seq2->data().length(),
@@ -381,9 +388,9 @@ int main(int argc, char* argv[]) {
         //     &cigar, &target_begin
         // );
 
-        cout<<seq1->data()<<endl;
-        // for(int i=0; i<target_begin;i++){cout<<" ";}
-        cout<<seq2->data()<<endl;
+        // cout<<seq1->data()<<endl;
+        // // for(int i=0; i<target_begin;i++){cout<<" ";}
+        // cout<<seq2->data()<<endl;
         // cout<<cigar<<endl;
         // cout<<score<<endl;
 
@@ -394,7 +401,7 @@ int main(int argc, char* argv[]) {
         cout<<"FASTA SIZE: "<<fragmentSequencesFASTA.size()<<endl;
         std::vector<std::vector<std::tuple<unsigned int, unsigned int, bool>>> all_minimizers;
         for (size_t i = 0; i < fragmentSequencesFASTA.size(); ++i) {
-            cout<<"i: "<<i<<endl;
+            // cout<<"i: "<<i<<endl;
             const char* sequence = fragmentSequencesFASTA[i]->data().c_str();
             size_t length = fragmentSequencesFASTA[i]->data().size();
             
@@ -406,6 +413,10 @@ int main(int argc, char* argv[]) {
                 unsigned int mapp = get<0>(minimizer);
                 minimizer_counts[mapp]++;
             }
+            PrintMinimizersVector(minimizers, k);
+            cout<<endl;
+            cout<<endl;
+            
         }
 
         size_t num_distinct = minimizer_counts.size();
