@@ -20,6 +20,7 @@
 #define PROGRAM_NAME "toolForGenomeAllignment"
 
 using namespace std;
+using namespace team;
 
 std::vector<std::tuple<unsigned int, unsigned int, bool>> remove_duplicates(
     const std::vector<std::tuple<unsigned int, unsigned int, bool>>& input) {
@@ -445,13 +446,15 @@ int main(int argc, char* argv[]) {
 
     auto& reference = referenceSequence.front()->data();
     //minimizers in the reference
-    auto minimizers_fwd = team::Minimize(reference.c_str(), reference.length(), k, w);
+    KMER ref(true);
+    auto minimizers_fwd =ref.Minimize(reference.c_str(), reference.length(), k, w);
     PrintMinimizersVector(minimizers_fwd, k);
 
     //complement of reference
     auto& reference_rev = ReverseComplement(reference);
     //minimizers in the complement reference
-    auto minimizers_rev = team::Minimize(reference_rev.c_str(), reference_rev.length(), k, w);
+    KMER ref_rev(false);
+    auto minimizers_rev = ref_rev.Minimize(reference_rev.c_str(), reference_rev.length(), k, w);
     PrintMinimizersVector(minimizers_rev, k);
 
 
@@ -597,7 +600,8 @@ int main(int argc, char* argv[]) {
         for (const auto& seq : fragmentSequencesFASTA) {
             cout << "pocinje" << endl;
             //minimizers in the seq fragment - returns vector tuple(hash, position, strand)
-            auto raw_frag_min = team::Minimize(seq->data().c_str(), seq->data().length(), k, w);
+            KMER frag(true);
+            auto raw_frag_min = frag.Minimize(seq->data().c_str(), seq->data().length(), k, w);
             auto frag_min = remove_duplicates(raw_frag_min);
 
             PrintMinimizersVector(frag_min, k);
@@ -792,7 +796,8 @@ int main(int argc, char* argv[]) {
     if(isFastq){
         printBasicStatisticFASTQ(file2);
         for (const auto& seq : fragmentSequencesFASTQ) {
-            auto raw_frag_min = team::Minimize(seq->sequence().c_str(), seq->sequence().length(), k, w);
+            KMER frag(true);
+            auto raw_frag_min = frag.Minimize(seq->sequence().c_str(), seq->sequence().length(), k, w);
             auto frag_min = remove_duplicates(raw_frag_min);
 
             vector<pair<unsigned int, unsigned int>> matches_fwd;
