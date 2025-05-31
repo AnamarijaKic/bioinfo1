@@ -1,2 +1,4 @@
->seq
+>seq1
 GTACGT
+>seq2
+TACGATG

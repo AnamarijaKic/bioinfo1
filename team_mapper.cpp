@@ -40,6 +40,16 @@ std::vector<std::tuple<unsigned int, unsigned int, bool>> remove_duplicates(
     return result;
 }
 
+void PrintReferenceIndex(const std::unordered_map<unsigned int, std::set<std::pair<unsigned int, bool>>>& reference_index) {
+    for (const auto& [minimizer_hash, positions_set] : reference_index) {
+        std::cout << "Minimizer hash: " << minimizer_hash << "\n";
+        for (const auto& [position, is_original_strand] : positions_set) {
+            std::cout << "  Position: " << position
+                      << ", Strand: " << (is_original_strand ? "+" : "-") << "\n";
+        }
+    }
+}
+
 // Mapping from bit shifted values to string
 string MappKmerBitToStringFWD(unsigned int kmer, unsigned int kmer_len){
     std::string mapp(kmer_len, 'X');
@@ -313,13 +323,18 @@ vector<pair<unsigned int, unsigned int>> FindLIS(const vector<pair<unsigned int,
     return result;
 }
 
+void PrintLIS(const std::vector<std::pair<unsigned int, unsigned int>>& lis_matches) {
+    std::cout << "Longest Increasing Subsequence (LIS) of matches:\n";
+    for (const auto& match : lis_matches) {
+        std::cout << "Fragment position: " << match.first
+                  << ", Reference position: " << match.second << "\n";
+    }
+}
 
 
 int main(int argc, char* argv[]) {
     team::AlignmentType align_type_ = team::AlignmentType::global;  // default;
     int match = 1, mismatch = -1, gap = -1;
-    int k = 15, w = 5;
-    double f = 0.001;
     string file1, file2;
     unsigned int k = 15, w = 5;
     double f = 0.001;
@@ -412,6 +427,8 @@ int main(int argc, char* argv[]) {
     auto& reference = referenceSequence.front()->data();
     //minimizers in the reference
     auto minimizers = team::Minimize(reference.c_str(), reference.length(), k, w);
+    PrintMinimizersVector(minimizers, k);
+
 
     cerr << "DEBUG: Number of minimizers in ref before f = " << minimizers.size() << endl;
 
@@ -434,6 +451,7 @@ int main(int argc, char* argv[]) {
         if (minimizer_frequencies[hash] <= frequency_threshold) {
             //reference_index[hash].emplace_back(pos, strand);
             reference_index[hash].insert({pos, strand});
+            //cerr << "hash: " << hash << " pos: " << pos << " strand: " << strand << endl;
         }
     }
 
@@ -530,6 +548,7 @@ int main(int argc, char* argv[]) {
         cerr << "DEBUG: Number of fragment sequences = " << fragmentSequencesFASTA.size() << endl;
         cerr << "DEBUG: Reference length = " << reference.length() << endl;
         cerr << "DEBUG: Reference index size = " << reference_index.size() << endl;
+        PrintReferenceIndex(reference_index);
 
 
 
@@ -539,6 +558,8 @@ int main(int argc, char* argv[]) {
             //minimizers in the seq fragment - returns vector tuple(hash, position, strand)
             auto raw_frag_min = team::Minimize(seq->data().c_str(), seq->data().length(), k, w);
             auto frag_min = remove_duplicates(raw_frag_min);
+
+            PrintMinimizersVector(frag_min, k);
 
             /*cout << "Minimizers for fragment: " << seq->name() << "\n";
             for (const auto& [hash, pos, strand] : frag_min) {
@@ -563,6 +584,7 @@ int main(int argc, char* argv[]) {
             }
             std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";*/
 
+
             for (const auto& [hash, f_pos, f_strand] : frag_min) {
                 if (reference_index.count(hash)) {
                     for (const auto& [r_pos, r_strand] : reference_index[hash]) {
@@ -573,10 +595,10 @@ int main(int argc, char* argv[]) {
             }
 
             //ISPIS MATCHES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            /*std::cout << "Matches (fragment_pos, reference_pos):\n";
+            std::cout << "Matches (fragment_pos, reference_pos):\n";
             for (const auto& [f_pos, r_pos] : matches) {
                 std::cout << "(" << f_pos << ", " << r_pos << ")\n";
-            }*/
+            }
 
 
 
@@ -585,14 +607,15 @@ int main(int argc, char* argv[]) {
 
             //Longest Increasing Subsequence
             auto chain = FindLIS(matches);
+            PrintLIS(chain);
             cerr << "DEBUG: LIS size = " << chain.size() << endl;
             if (chain.empty()) continue;
 
             //beginning and end positions in the fragment and the reference (target)
             unsigned int q_begin = chain.front().first-1;
-            unsigned int q_end = chain.back().first + k-1;
+            unsigned int q_end = chain.back().first + k-2;
             unsigned int t_begin = chain.front().second-1;
-            unsigned int t_end = chain.back().second + k-1;
+            unsigned int t_end = chain.back().second + k-2;
 
             //cerr << "DEBUG: " << q_begin << q_end << t_begin << t_end << endl;
 
@@ -624,8 +647,8 @@ int main(int argc, char* argv[]) {
 
             try{ 
                 score = team::Align(
-                    seq->data().c_str() + q_begin, q_end - q_begin,
-                    reference.c_str() + t_begin, t_end - t_begin,
+                    seq->data().c_str() + q_begin, q_end - q_begin + 1,
+                    reference.c_str() + t_begin, t_end - t_begin + 1,
                     align_type_, match, mismatch, gap,
                     output_cigar ? &cigar : nullptr, &ref_offset);
                 
@@ -638,9 +661,9 @@ int main(int argc, char* argv[]) {
 
 
             cerr << "DEBUG: Reached output stage" << endl;
-            cout << seq->name() << "\t" << seq->data().size() << "\t" << q_begin << "\t" << q_end
+            cout << seq->name() << "\t" << seq->data().size() << "\t" << q_begin << "\t" << (q_end + 1)
                 << "\t+\t" << referenceSequence.front()->name() << "\t" << reference.length()
-                << "\t" << t_begin << "\t" << t_end << "\t" /*<< score << "\t"*/ << (q_end - q_begin)
+                << "\t" << t_begin << "\t" << (t_end + 1) << "\t" << score << "\t" << (q_end - q_begin + 1)
                 << "\t60";
             if (output_cigar) {
                 cout << "\tcg:Z:" << cigar;
@@ -649,6 +672,7 @@ int main(int argc, char* argv[]) {
             cout << endl;
         }
 
+        /* 
         // Get unique minimizers and Number of occurance of unique minimizers:
         // std::set<std::tuple<unsigned int, unsigned int, bool>> unique_minimizers;
         unordered_map<unsigned int, size_t> minimizer_counts;
@@ -703,7 +727,7 @@ int main(int argc, char* argv[]) {
             cout << "Most frequent minimizer (excluding top " << f << "): count = " << freq << endl;
         } else {
             cout << "Not enough minimizers to exclude top " << f << "!" << endl;
-        }
+        }*/
     }
 
     if(isFastq){
@@ -725,9 +749,9 @@ int main(int argc, char* argv[]) {
             if (chain.empty()) continue;
 
             unsigned int q_begin = chain.front().first-1;
-            unsigned int q_end = chain.back().first + k-1;
+            unsigned int q_end = chain.back().first + k-2;
             unsigned int t_begin = chain.front().second-1;
-            unsigned int t_end = chain.back().second + k-1;
+            unsigned int t_end = chain.back().second + k-2;
 
             string cigar;
             unsigned int ref_offset;
@@ -738,9 +762,9 @@ int main(int argc, char* argv[]) {
                 align_type_, match, mismatch, gap,
                 output_cigar ? &cigar : nullptr, &ref_offset);
 
-            cout << seq->name() << "\t" << seq->sequence().size() << "\t" << q_begin << "\t" << q_end
+            cout << seq->name() << "\t" << seq->sequence().size() << "\t" << q_begin << "\t" << (q_end + 1)
                 << "\t+\t" << referenceSequence.front()->name() << "\t" << reference.length()
-                << "\t" << t_begin << "\t" << t_end << "\t" << score << "\t" << (q_end - q_begin)
+                << "\t" << t_begin << "\t" << (t_end + 1) << "\t" << score << "\t" << (q_end - q_begin + 1)
                 << "\t60";
             if (output_cigar) {
                 cout << "\tcg:Z:" << cigar;

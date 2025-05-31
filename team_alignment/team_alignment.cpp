@@ -28,7 +28,7 @@ namespace team {
     void printAlignmentMatrix(const char* query, unsigned int query_len,
                                 const char* target, unsigned int target_len, std::vector<std::vector<team::cell>>& matrix){
         std::cout<<"\t \t ";
-        for (int j=0; j<target_len+1; j++){
+        for (int j=0; j<target_len; j++){
             std::cout<<target[j]<<"\t ";
         }
         std::cout<<std::endl;
@@ -165,7 +165,7 @@ namespace team {
                     // *cigar = compressed;
                 }
                 
-                // printAlignmentMatrix(query, query_len, target, target_len, m);
+                printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                 break;
             case AlignmentType::local:  
@@ -227,7 +227,7 @@ namespace team {
                     *target_begin = local_j + 1; // ************************KAJ JE OV TOČNO********************************************************+
                 }
 
-                // printAlignmentMatrix(query, query_len, target, target_len, m);
+                printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                             
                 break;
@@ -291,7 +291,7 @@ namespace team {
                     
                 }
                 
-                // printAlignmentMatrix(query, query_len, target, target_len, m);
+                printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                 break;
             
@@ -299,4 +299,5 @@ namespace team {
                 return -11111111; // RAZMISLITI KAJ STAVITI ZA DEFAULT ******************************************
         }       
     }
+}
 }
