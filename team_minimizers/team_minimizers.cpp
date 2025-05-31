@@ -57,7 +57,7 @@ namespace team {
     }
 
     // Mapping function for a k-mer
-    unsigned int MappSeqCharPointerToBit(const char* seq){
+    unsigned int MappSeqCharPointerToBit(const char* seq, unsigned int kmer_len){
         unsigned int mapp = 0;
         // Value mapping for positions (original order)
         unordered_map<char, unsigned int> base_value = {
@@ -67,10 +67,11 @@ namespace team {
             {'G', 3}
         };
 
-        for (unsigned int i=0; i<seq[i]!='\0'; i++){
+        for (int i=0; i<kmer_len; i++){
             mapp<<=2;
             mapp |= base_value[seq[i]];
         }
+
         return mapp;
     }
 
@@ -202,21 +203,17 @@ namespace team {
         for(unsigned int u=kmer_len; u<(window_len+kmer_len-1);u++){
             deque<tuple<unsigned int, unsigned int, bool>> end_window;
             for (unsigned int i = 0; i <= u-kmer_len; i++){
-                // unsigned int mapp_fwd_bit = ExtractKmer(mapp_seq_fwd_bit, sequence_len-kmer_len-i, kmer_len);
-                // unsigned int mapp_rev_bit = ExtractKmer(mapp_seq_rev_bit, i, kmer_len);
-
-                // unsigned int mapp_fwd_bit = ExtractKmerWithMask(mapp_seq_fwd_bit, sequence_len-kmer_len-i, mask);
-                // unsigned int mapp_rev_bit = ExtractKmerWithMask(mapp_seq_rev_bit, i, mask);
-
-                string mapp_fwd_str(sequence+i, kmer_len);
-                string mapp_rev_str(rc_sequence+sequence_len-kmer_len-i, kmer_len);
-
-                unsigned int mapp_fwd_bit = MappKmerStringToBit(mapp_fwd_str);
-                unsigned int mapp_rev_bit = MappKmerStringToBit(mapp_rev_str);
-
-
+                unsigned int mapp_fwd_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
+                unsigned int mapp_rev_bit = MappSeqCharPointerToBit(rc_sequence+sequence_len-kmer_len-i, kmer_len);
+                
                 unsigned int min_kmer = min(mapp_fwd_bit, mapp_rev_bit);
                 bool is_fwd = (min_kmer == mapp_fwd_bit);
+
+                // // OVO JE ZA TESTIRANJE MAPPERA!----------------------------------------------------------------------------------------------
+                // unsigned int min_kmer = MappKmerStringToBit(mapp_fwd_str);
+                // bool is_fwd = true;
+                // // -----------------------------------------------------------------------------------------------------------------------------
+
 
                 end_window.push_back(make_tuple(min_kmer, i+1, is_fwd));
             }
@@ -226,21 +223,20 @@ namespace team {
         // NORMAL WINDOWS - najbolje za sad
         for (unsigned int i = 0; i <= sequence_len-kmer_len; i++){
             if(i>=window_len){ window.pop_front(); }
-            
-            // unsigned int mapp_fwd_bit = ExtractKmer(mapp_seq_fwd_bit, sequence_len-kmer_len-i, kmer_len);
-            // unsigned int mapp_rev_bit = ExtractKmer(mapp_seq_rev_bit, i, kmer_len);
-
-            // unsigned int mapp_fwd_bit = ExtractKmerWithMask(mapp_seq_fwd_bit, sequence_len-kmer_len-i, mask);
-            // unsigned int mapp_rev_bit = ExtractKmerWithMask(mapp_seq_rev_bit, i, mask);
-
-            string mapp_fwd_str(sequence+i, kmer_len);
-            string mapp_rev_str(rc_sequence+sequence_len-kmer_len-i, kmer_len);
-
-            unsigned int mapp_fwd_bit = MappKmerStringToBit(mapp_fwd_str);
-            unsigned int mapp_rev_bit = MappKmerStringToBit(mapp_rev_str);
-            
+            // // **** OVO ODKOMENTIRAJ *******************************************************************************************************
+            // string mapp_fwd_str(sequence+i, kmer_len);
+            // string mapp_rev_str(rc_sequence+sequence_len-kmer_len-i, kmer_len);
+            unsigned int mapp_fwd_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
+            unsigned int mapp_rev_bit = MappSeqCharPointerToBit(rc_sequence+sequence_len-kmer_len-i, kmer_len);
             unsigned int min_kmer = min(mapp_fwd_bit, mapp_rev_bit);
             bool is_fwd = (min_kmer == mapp_fwd_bit);
+            // // *******************************************************************************************************************************
+
+            // // OVO JE ZA TESTIRANJE MAPPERA!----------------------------------------------------------------------------------------------
+            // unsigned int min_kmer = MappKmerStringToBit(mapp_fwd_str);
+            // bool is_fwd = true;
+            // // -----------------------------------------------------------------------------------------------------------------------------
+            
             
             window.push_back(make_tuple(min_kmer, i+1, is_fwd));
 
@@ -256,19 +252,15 @@ namespace team {
             unsigned int start = sequence_len - u;
 
             for (unsigned int i = start; i <= sequence_len - kmer_len; ++i){
-                // unsigned int mapp_fwd_bit = ExtractKmer(mapp_seq_fwd_bit, sequence_len-kmer_len-i, kmer_len);
-                // unsigned int mapp_rev_bit = ExtractKmer(mapp_seq_rev_bit, i, kmer_len);
-                // unsigned int mapp_fwd_bit = ExtractKmerWithMask(mapp_seq_fwd_bit, sequence_len-kmer_len-i, mask);
-                // unsigned int mapp_rev_bit = ExtractKmerWithMask(mapp_seq_rev_bit, i, mask);
-
-                string mapp_fwd_str(sequence+i, kmer_len);
-                string mapp_rev_str(rc_sequence+sequence_len-kmer_len-i, kmer_len);
-
-                
-                unsigned int mapp_fwd_bit = MappKmerStringToBit(mapp_fwd_str);
-                unsigned int mapp_rev_bit = MappKmerStringToBit(mapp_rev_str);
+                unsigned int mapp_fwd_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
+                unsigned int mapp_rev_bit = MappSeqCharPointerToBit(rc_sequence+sequence_len-kmer_len-i, kmer_len);
                 unsigned int min_kmer = min(mapp_fwd_bit, mapp_rev_bit);
                 bool is_fwd = (min_kmer == mapp_fwd_bit);
+                
+                // // OVO JE ZA TESTIRANJE MAPPERA!----------------------------------------------------------------------------------------------
+                // unsigned int min_kmer = MappKmerStringToBit(mapp_fwd_str);
+                // bool is_fwd = true;
+                // // -----------------------------------------------------------------------------------------------------------------------------
 
                 
                 end_window.push_back(make_tuple(min_kmer, i+1, is_fwd));
