@@ -448,14 +448,14 @@ int main(int argc, char* argv[]) {
     //minimizers in the reference
     KMER ref(true);
     auto minimizers_fwd =ref.Minimize(reference.c_str(), reference.length(), k, w);
-    PrintMinimizersVector(minimizers_fwd, k);
+    //PrintMinimizersVector(minimizers_fwd, k);
 
     //complement of reference
     auto& reference_rev = ReverseComplement(reference);
     //minimizers in the complement reference
     KMER ref_rev(false);
     auto minimizers_rev = ref_rev.Minimize(reference_rev.c_str(), reference_rev.length(), k, w);
-    PrintMinimizersVector(minimizers_rev, k);
+    //PrintMinimizersVector(minimizers_rev, k);
 
 
     cerr << "DEBUG: Number of minimizers in ref fwd before f = " << minimizers_fwd.size() << endl;
@@ -604,7 +604,7 @@ int main(int argc, char* argv[]) {
             auto raw_frag_min = frag.Minimize(seq->data().c_str(), seq->data().length(), k, w);
             auto frag_min = remove_duplicates(raw_frag_min);
 
-            PrintMinimizersVector(frag_min, k);
+            //PrintMinimizersVector(frag_min, k);
 
             /*cout << "Minimizers for fragment: " << seq->name() << "\n";
             for (const auto& [hash, pos, strand] : frag_min) {
@@ -664,7 +664,9 @@ int main(int argc, char* argv[]) {
             if (chain.empty()) continue;*/
 
             auto chain_fwd = FindLIS(matches_fwd);
+            //PrintLIS(chain_fwd);
             auto chain_rev = FindLIS(matches_rev);
+            //PrintLIS(chain_rev);
             vector<pair<unsigned int, unsigned int>> chain;
             if (chain_fwd.size() >= chain_rev.size()){
                 chain = chain_fwd;
@@ -709,11 +711,21 @@ int main(int argc, char* argv[]) {
             int score;
 
             try{ 
-                score = team::Align(
-                    seq->data().c_str() + q_begin, q_end - q_begin + 1,
-                    reference.c_str() + t_begin, t_end - t_begin + 1,
-                    align_type_, match, mismatch, gap,
-                    output_cigar ? &cigar : nullptr, &ref_offset);
+                if(chain == chain_fwd){
+                    score = team::Align(
+                        seq->data().c_str() + q_begin, q_end - q_begin + 1,
+                        reference.c_str() + t_begin, t_end - t_begin + 1,
+                        align_type_, match, mismatch, gap,
+                        output_cigar ? &cigar : nullptr, &ref_offset);
+                }
+                else{
+                    score = team::Align(
+                        seq->data().c_str() + q_begin, q_end - q_begin + 1,
+                        reference_rev.c_str() + t_begin, t_end - t_begin + 1,
+                        align_type_, match, mismatch, gap,
+                        output_cigar ? &cigar : nullptr, &ref_offset);
+                }
+                
                 
                 } catch (const std::exception& e) {
                     cerr << "ERROR: Exception during Align: " << e.what() << endl;
