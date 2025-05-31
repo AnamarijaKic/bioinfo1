@@ -211,13 +211,18 @@ namespace team {
                 string mapp_fwd_str(sequence+i, kmer_len);
                 string mapp_rev_str(rc_sequence+sequence_len-kmer_len-i, kmer_len);
 
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 unsigned int mapp_fwd_bit = MappKmerStringToBit(mapp_fwd_str);
                 unsigned int mapp_rev_bit = MappKmerStringToBit(mapp_rev_str);
-
-
+                
                 unsigned int min_kmer = min(mapp_fwd_bit, mapp_rev_bit);
                 bool is_fwd = (min_kmer == mapp_fwd_bit);
+                /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+                unsigned int min_kmer = MappKmerStringToBit(mapp_fwd_str);
+                bool is_fwd = true;
+
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
                 end_window.push_back(make_tuple(min_kmer, i+1, is_fwd));
             }
             minimizers.push_back(GetTupleWithMinFirst(end_window));
@@ -236,11 +241,18 @@ namespace team {
             string mapp_fwd_str(sequence+i, kmer_len);
             string mapp_rev_str(rc_sequence+sequence_len-kmer_len-i, kmer_len);
 
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             unsigned int mapp_fwd_bit = MappKmerStringToBit(mapp_fwd_str);
             unsigned int mapp_rev_bit = MappKmerStringToBit(mapp_rev_str);
             
             unsigned int min_kmer = min(mapp_fwd_bit, mapp_rev_bit);
             bool is_fwd = (min_kmer == mapp_fwd_bit);
+            /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            unsigned int min_kmer = MappKmerStringToBit(mapp_fwd_str);
+            bool is_fwd = true;
+
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
             
             window.push_back(make_tuple(min_kmer, i+1, is_fwd));
 
@@ -265,10 +277,18 @@ namespace team {
                 string mapp_rev_str(rc_sequence+sequence_len-kmer_len-i, kmer_len);
 
                 
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 unsigned int mapp_fwd_bit = MappKmerStringToBit(mapp_fwd_str);
                 unsigned int mapp_rev_bit = MappKmerStringToBit(mapp_rev_str);
+                
                 unsigned int min_kmer = min(mapp_fwd_bit, mapp_rev_bit);
                 bool is_fwd = (min_kmer == mapp_fwd_bit);
+                /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                unsigned int min_kmer = MappKmerStringToBit(mapp_fwd_str);
+                bool is_fwd = true;
+
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
                 
                 end_window.push_back(make_tuple(min_kmer, i+1, is_fwd));

@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 4.0.2)
 
 project(allignment)
 
-set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 
 # Add the alignment library
 add_library(team_alignment 
