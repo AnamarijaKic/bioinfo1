@@ -165,9 +165,8 @@ namespace team {
                     // *cigar = compressed;
                 }
                 
-                printAlignmentMatrix(query, query_len, target, target_len, m);
+                // printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
-
                 break;
             case AlignmentType::local:  
                 std::cout<<"DEBUG: local" << "\n";  
@@ -197,7 +196,8 @@ namespace team {
 
                 std::cout<<"DEBUG: Proso prvu for petlju" << "\n";
 
-                while (m[local_i][local_j].cost > 0) {
+                if(cigar!=nullptr){
+                    while (m[local_i][local_j].cost > 0) {
                     int dir = m[local_i][local_j].parent;
                     if (dir == MATCH) {
                         result.push_back('M');
@@ -227,7 +227,7 @@ namespace team {
                     *target_begin = local_j + 1; // ************************KAJ JE OV TOČNO********************************************************+
                 }
 
-                printAlignmentMatrix(query, query_len, target, target_len, m);
+                // printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                             
                 break;
@@ -291,7 +291,7 @@ namespace team {
                     
                 }
                 
-                printAlignmentMatrix(query, query_len, target, target_len, m);
+                // printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                 break;
             

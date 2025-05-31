@@ -7,9 +7,13 @@
 #include <unordered_map>
 #include <set>
 #include <unordered_set>
+#include <set>
+#include <queue>
+#include <unordered_map>
 #include "bioparser/include/bioparser/fasta_parser.hpp"
 #include "bioparser/include/bioparser/fastq_parser.hpp"
 #include "team_alignment/team_alignment.hpp" 
+#include "team_minimizers/team_minimizers.hpp"
 #include "team_minimizers/team_minimizers.hpp"
 
 #define VERSION "0.1.0"
@@ -34,6 +38,57 @@ std::vector<std::tuple<unsigned int, unsigned int, bool>> remove_duplicates(
         }
     }
     return result;
+}
+
+// Mapping from bit shifted values to string
+string MappKmerBitToStringFWD(unsigned int kmer, unsigned int kmer_len){
+    std::string mapp(kmer_len, 'X');
+    // Value mapping for positions (original order)
+    unordered_map<unsigned int, char> base_value = {
+        {0,'C'},
+        {1,'A'},
+        {2,'T'},
+        {3,'G'}
+    };
+
+    for (int i = kmer_len - 1; i >= 0; --i){
+        unsigned int bits = kmer & 0b11;
+        mapp[i] = base_value[bits];
+        kmer>>=2;
+    }
+
+    return mapp;
+}
+
+void PrintMinimizersVector(const vector<tuple<unsigned int, unsigned int, bool>>& minimizers, unsigned int k) {
+    for (const auto& t : minimizers) {
+        unsigned int hash = get<0>(t);
+        bool is_fwd = get<2>(t);
+        string mapp = MappKmerBitToStringFWD(hash, k);
+        // if(is_fwd){
+        //     mapp = MappKmerBitToStringFWD(hash, k);
+        // } else{
+        //     mapp = MappKmerBitToStringREV(hash, k);
+        // }
+        
+        unsigned int position = get<1>(t);
+        
+        cout << "Hash: " << mapp
+             << ", Position: " << position
+             << ", Strand: " << (is_fwd ? "FWD" : "REV") << endl;
+    }
+}
+
+void PrintMinimizersSet(const std::set<std::tuple<unsigned int, unsigned int, bool>>& minimizers) {
+    for (const auto& t : minimizers) {
+        unsigned int hash = std::get<0>(t);
+        unsigned int position = std::get<1>(t);
+        bool is_fwd = std::get<2>(t);
+
+        std::cout << "Hash: " << hash
+                  << ", Position: " << position
+                  << ", Strand: " << (is_fwd ? "FWD" : "REV") << std::endl;
+    }
 }
 
 struct SequenceFASTA {  // or any other name
@@ -83,7 +138,10 @@ void printHelp(){
         << "\t  -f FREQUENCY_THRESHOLD   Frequency threshold factor (default: 0.001)\n"
         << "\t  -c                       Output CIGAR string\n"
         << "\t  -h, --help               Show this help message\n"
-        << "\t  --version                Show version information\n";
+        << "\t  --version                Show version information\n"
+        << "\t  -k                       K-mer size\n"
+        << "\t  -w                       Window size\n"
+        << "\t  -f                       Percentage of top frequent minimizers\n";
 }
 
 void printBasicStatisticFASTA(string file){
@@ -260,6 +318,8 @@ vector<pair<unsigned int, unsigned int>> FindLIS(const vector<pair<unsigned int,
 int main(int argc, char* argv[]) {
     team::AlignmentType align_type_ = team::AlignmentType::global;  // default;
     int match = 1, mismatch = -1, gap = -1;
+    int k = 15, w = 5;
+    double f = 0.001;
     string file1, file2;
     unsigned int k = 15, w = 5;
     double f = 0.001;
@@ -418,19 +478,23 @@ int main(int argc, char* argv[]) {
         cout<< "ODKOMENTIRAJ BASIC STATISTIC PO POTREBI ***********************************"<<endl;
         // printBasicStatisticFASTA(file2);
 
-        if (fragmentSequencesFASTA.size()<2){  std::cerr << "Need at least 2 sequences to pick two different ones.\n";}
+        // MINIMIZER ZA MALI PRIMJER ********************************************
+        // vector<tuple<unsigned int, unsigned int, bool>> minimizers = team::Minimize(fragmentSequencesFASTA[0]->data().c_str(), fragmentSequencesFASTA[0]->data().size(), k, w);
+        // PrintMinimizersVector(minimizers, k);
+
+        if (fragmentSequencesFASTA.size()<2){  std::cerr << "Need at least 2 sequences to pick two different ones.\n"; return 0;}
 
         /*mt19937 rng(static_cast<unsigned int>(std::time(nullptr)));
         uniform_int_distribution<> dist(0, fragmentSequencesFASTA.size() - 1);
 
         int index1;
         do {
-            index1 = dist(rng);
+            index1 = rand() % fragmentSequencesFASTA.size();
         } while (fragmentSequencesFASTA[index1]->data().size()>5000);
 
         int index2;
         do {
-            index2 = dist(rng);
+            index2 = rand() % fragmentSequencesFASTA.size();
         } while ((fragmentSequencesFASTA[index1]->data().size()>5000)
                     || (index1==index2));
 
@@ -446,16 +510,16 @@ int main(int argc, char* argv[]) {
         cout << "Second random index: " << index2 << " -> " << seq2->name() << "\n";
 
        
-        std::string cigar;
-        unsigned int target_begin;
-        // trebam svaku od ovih seq1 i seq2 pripasati k pravoj referenci***********************************************************************************************************+
-        int score = team::Align(
-            seq1->data().c_str(), seq1->data().length(),
-            seq2->data().c_str(), seq2->data().length(),
-            align_type_,  // Note: enum must also be qualified
-            match, mismatch, gap,
-            &cigar, &target_begin
-        );
+        // std::string cigar;
+        // unsigned int target_begin;
+        // // trebam svaku od ovih seq1 i seq2 pripasati k pravoj referenci***********************************************************************************************************+
+        // int score = team::Align(
+        //     seq1->data().c_str(), seq1->data().length(),
+        //     seq2->data().c_str(), seq2->data().length(),
+        //     align_type_,  // Note: enum must also be qualified
+        //     match, mismatch, gap,
+        //     &cigar, &target_begin
+        // );
 
         cout<<seq1->data()<<endl;
         // for(int i=0; i<target_begin;i++){cout<<" ";}
@@ -585,7 +649,61 @@ int main(int argc, char* argv[]) {
             cout << endl;
         }
 
+        // Get unique minimizers and Number of occurance of unique minimizers:
+        // std::set<std::tuple<unsigned int, unsigned int, bool>> unique_minimizers;
+        unordered_map<unsigned int, size_t> minimizer_counts;
+        cout<<"Iteration through second file!"<<endl;
+        cout<<"FASTA SIZE: "<<fragmentSequencesFASTA.size()<<endl;
+        std::vector<std::vector<std::tuple<unsigned int, unsigned int, bool>>> all_minimizers;
+        for (size_t i = 0; i < fragmentSequencesFASTA.size(); ++i) {
+            // cout<<"i: "<<i<<endl;
+            const char* sequence = fragmentSequencesFASTA[i]->data().c_str();
+            size_t length = fragmentSequencesFASTA[i]->data().size();
+            
+            auto minimizers = team::Minimize(sequence, length, k, w);
+            all_minimizers.push_back(minimizers);
 
+            // Count and append unique minimizers
+            for (const auto& minimizer : minimizers) {
+                unsigned int mapp = get<0>(minimizer);
+                minimizer_counts[mapp]++;
+            }
+            PrintMinimizersVector(minimizers, k);
+            cout<<endl;
+            cout<<endl;
+            
+        }
+
+        size_t num_distinct = minimizer_counts.size();
+        cout<<"Number of distinct minimizers: "<<num_distinct<<endl;
+
+        // Fraction of singletons
+        size_t num_singletons = count_if(
+            minimizer_counts.begin(), minimizer_counts.end(),
+            [](const pair<const unsigned int, size_t>& entry) {
+                return entry.second == 1;
+            }
+        );
+        double singleton_fraction = 1.0 * num_singletons / num_distinct;
+        cout<<"Fraction of singletons: "<<singleton_fraction<<endl;
+
+        // Most frequent minimizer (excluding top f)
+        priority_queue<pair<size_t, unsigned int>> frequencies;
+        for (const auto& kv : minimizer_counts) {
+            frequencies.emplace(kv.second, kv.first);  
+        }
+
+        // Poping the top `f` frequent minimizers
+        for (int i = 0; i < f*frequencies.size() && !frequencies.empty(); ++i) {
+            frequencies.pop();
+        }
+
+        if (!frequencies.empty()) {
+            size_t freq = frequencies.top().first;
+            cout << "Most frequent minimizer (excluding top " << f << "): count = " << freq << endl;
+        } else {
+            cout << "Not enough minimizers to exclude top " << f << "!" << endl;
+        }
     }
 
     if(isFastq){
@@ -632,6 +750,7 @@ int main(int argc, char* argv[]) {
 
     }
     
+
 
 
     return 0;
