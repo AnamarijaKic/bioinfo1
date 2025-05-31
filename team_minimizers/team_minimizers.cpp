@@ -167,6 +167,7 @@ namespace team {
                     minimizers.push_back(GetTupleWithMinFirst(end_window));
                 }
                 return minimizers;
+
             }
 
     // };
