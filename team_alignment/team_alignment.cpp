@@ -158,7 +158,6 @@ namespace team {
                 
                 // printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
-
                 break;
             case AlignmentType::local:    
                 for (i=1; i<=query_len; i++){
@@ -185,25 +184,27 @@ namespace team {
                     }   
                 }        
 
-                while (m[local_i][local_j].cost > 0) {
+                if(cigar!=nullptr){
+                    while (m[local_i][local_j].cost > 0) {
                     int dir = m[local_i][local_j].parent;
                     if (dir == MATCH) {
                         result.push_back('M');
                         local_i--; local_j--;
-                } else if (dir == INSERT) {
-                        result.push_back('I');
-                        local_j--;
-                } else if (dir == DELETE) {
-                        result.push_back('D');
-                        local_i--;
-                } else {
-                        break; // shouldn't happen if parent is valid
+                    } else if (dir == INSERT) {
+                            result.push_back('I');
+                            local_j--;
+                    } else if (dir == DELETE) {
+                            result.push_back('D');
+                            local_i--;
+                    } else {
+                            break; // shouldn't happen if parent is valid
+                        }
                     }
+
+                    std::reverse(result.begin(), result.end());
+                    *cigar = result;
                 }
-
-                std::reverse(result.begin(), result.end());
-                *cigar = result;
-
+                
                 // Now (si+1, sj+1) is the starting position of the local alignment
                 if (target_begin != nullptr) {
                     *target_begin = local_j + 1; // ************************KAJ JE OV TOČNO********************************************************+
