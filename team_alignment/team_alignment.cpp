@@ -143,7 +143,9 @@ namespace team {
                     }
 
                     std::reverse(result.begin(), result.end());
-                    *cigar = result;
+                    if(cigar != nullptr){
+                        *cigar = result;
+                    }
 
                     // Optional: compress like 5M3I2D → into CIGAR format
                     // std::string compressed;
@@ -214,7 +216,9 @@ namespace team {
                 std::cout<<"DEBUG: Prosao while" << "\n";
 
                 std::reverse(result.begin(), result.end());
-                *cigar = result;
+                if(cigar != nullptr){
+                    *cigar = result;
+                }
 
                 std::cout<<"DEBUG: Prosao reverse" << "\n";
 
@@ -281,7 +285,10 @@ namespace team {
                         }
                     }
                     std::reverse(result.begin(), result.end());
-                    *cigar = result;
+                    if(cigar != nullptr){
+                        *cigar = result;
+                    }
+                    
                 }
                 
                 printAlignmentMatrix(query, query_len, target, target_len, m);
