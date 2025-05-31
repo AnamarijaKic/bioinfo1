@@ -50,6 +50,23 @@ void PrintReferenceIndex(const std::unordered_map<unsigned int, std::set<std::pa
     }
 }
 
+// Reverse complement of a DNA string
+    string ReverseComplement(const string& kmer) { 
+        //ACG -> GCA -> CGT!!
+        // 1. reverse seq
+        string rc(kmer.rbegin(), kmer.rend()); //https://cplusplus.com/reference/string/string/rbegin/
+        // 2. compl seq
+        for (char& c : rc) {
+            switch (c) {
+                case 'A': c = 'T'; break;
+                case 'T': c = 'A'; break;
+                case 'G': c = 'C'; break;
+                case 'C': c = 'G'; break;
+            }
+        }
+        return rc;
+    }
+
 // Mapping from bit shifted values to string
 string MappKmerBitToStringFWD(unsigned int kmer, unsigned int kmer_len){
     std::string mapp(kmer_len, 'X');
@@ -421,16 +438,26 @@ int main(int argc, char* argv[]) {
 
     //map for minimizer index in the reference genome (key-minimizer hash, (position, orientation))
     //unordered_map<unsigned int, vector<pair<unsigned int, bool>>> reference_index;
-    unordered_map<unsigned int, set<pair<unsigned int, bool>>> reference_index;
-    unordered_map<unsigned int, int> minimizer_frequencies;
+    unordered_map<unsigned int, set<pair<unsigned int, bool>>> reference_index_fwd;
+    unordered_map<unsigned int, int> minimizer_frequencies_fwd;
+    unordered_map<unsigned int, set<pair<unsigned int, bool>>> reference_index_rev;
+    unordered_map<unsigned int, int> minimizer_frequencies_rev;
 
     auto& reference = referenceSequence.front()->data();
     //minimizers in the reference
-    auto minimizers = team::Minimize(reference.c_str(), reference.length(), k, w);
-    PrintMinimizersVector(minimizers, k);
+    auto minimizers_fwd = team::Minimize(reference.c_str(), reference.length(), k, w);
+    PrintMinimizersVector(minimizers_fwd, k);
+
+    //complement of reference
+    auto& reference_rev = ReverseComplement(reference);
+    //minimizers in the complement reference
+    auto minimizers_rev = team::Minimize(reference_rev.c_str(), reference_rev.length(), k, w);
+    PrintMinimizersVector(minimizers_rev, k);
 
 
-    cerr << "DEBUG: Number of minimizers in ref before f = " << minimizers.size() << endl;
+    cerr << "DEBUG: Number of minimizers in ref fwd before f = " << minimizers_fwd.size() << endl;
+    cerr << "DEBUG: Number of minimizers in ref rev before f = " << minimizers_rev.size() << endl;
+
 
     /*cout << "Minimizers for reference: " << referenceSequence.front()->name() << "\n";
             for (const auto& [hash, pos, strand] : minimizers) {
@@ -441,16 +468,28 @@ int main(int argc, char* argv[]) {
 
 
     //how frequent is the minimizer in the reference
-    for (const auto& [hash, pos, strand] : minimizers) {
-        minimizer_frequencies[hash]++;
+    for (const auto& [hash, pos, strand] : minimizers_fwd) {
+        minimizer_frequencies_fwd[hash]++;
+    }
+    for (const auto& [hash, pos, strand] : minimizers_rev) {
+        minimizer_frequencies_rev[hash]++;
     }
 
     int frequency_threshold = static_cast<int>(f * reference.length());
     //filtering minimizers that show up too often
-    for (const auto& [hash, pos, strand] : minimizers) {
-        if (minimizer_frequencies[hash] <= frequency_threshold) {
+    for (const auto& [hash, pos, strand] : minimizers_fwd) {
+        if (minimizer_frequencies_fwd[hash] <= frequency_threshold) {
             //reference_index[hash].emplace_back(pos, strand);
-            reference_index[hash].insert({pos, strand});
+            reference_index_fwd[hash].insert({pos, strand});
+            //cerr << "hash: " << hash << " pos: " << pos << " strand: " << strand << endl;
+        }
+    }
+
+    //filtering minimizers that show up too often
+    for (const auto& [hash, pos, strand] : minimizers_rev) {
+        if (minimizer_frequencies_rev[hash] <= frequency_threshold) {
+            //reference_index[hash].emplace_back(pos, strand);
+            reference_index_rev[hash].insert({pos, strand});
             //cerr << "hash: " << hash << " pos: " << pos << " strand: " << strand << endl;
         }
     }
@@ -547,8 +586,10 @@ int main(int argc, char* argv[]) {
 
         cerr << "DEBUG: Number of fragment sequences = " << fragmentSequencesFASTA.size() << endl;
         cerr << "DEBUG: Reference length = " << reference.length() << endl;
-        cerr << "DEBUG: Reference index size = " << reference_index.size() << endl;
-        PrintReferenceIndex(reference_index);
+        cerr << "DEBUG: Reference index fwd size = " << reference_index_fwd.size() << endl;
+        cerr << "DEBUG: Reference index rev size = " << reference_index_rev.size() << endl;
+
+        //PrintReferenceIndex(reference_index_fwd);
 
 
 
@@ -569,46 +610,64 @@ int main(int argc, char* argv[]) {
             }*/
 
             cerr << "DEBUG: Number of minimizers in fragment = " << frag_min.size() << endl;
-            cerr << "DEBUG: Number of minimizers in reference = " << reference_index.size() << endl;
+            cerr << "DEBUG: Number of minimizers in reference fwd = " << reference_index_fwd.size() << endl;
+            cerr << "DEBUG: Number of minimizers in reference rev = " << reference_index_rev.size() << endl;
 
-            vector<pair<unsigned int, unsigned int>> matches;
+
+            //vector<pair<unsigned int, unsigned int>> matches;
             //finding matches in the reference genome for the minimizers in frag_min
-            
-            /*std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
-            for (const auto& [hash, f_pos, f_strand] : frag_min) {
-                std::cout << hash << " " << f_pos << " " << f_strand << std::endl;
-            }
 
-            for (const auto& [hash, r_strand] : reference_index) {
-                std::cout << hash << " " << debugPrintUglyMonstrosity(r_strand);
-            }
-            std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";*/
-
-
-            for (const auto& [hash, f_pos, f_strand] : frag_min) {
+            //*****************************************************************MATCHES KAD SE SALJU SAMO MANJI MINIMIZERI */
+            /*for (const auto& [hash, f_pos, f_strand] : frag_min) {
                 if (reference_index.count(hash)) {
                     for (const auto& [r_pos, r_strand] : reference_index[hash]) {
                         //saving (position in the fragnment, position in the reference)
                         matches.emplace_back(f_pos, r_pos);
                     }
                 }
+            }*/
+
+            vector<pair<unsigned int, unsigned int>> matches_fwd;
+            vector<pair<unsigned int, unsigned int>> matches_rev;
+            for (const auto& [hash, f_pos, f_strand] : frag_min) {
+                if (reference_index_fwd.count(hash)) {
+                    for (const auto& [r_pos, r_strand] : reference_index_fwd[hash]) {
+                            matches_fwd.emplace_back(f_pos, r_pos);
+                        }
+                    for (const auto& [r_pos, r_strand] : reference_index_rev[hash]) {
+                            matches_rev.emplace_back(f_pos, r_pos);   
+                    }
+                }
             }
 
             //ISPIS MATCHES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            std::cout << "Matches (fragment_pos, reference_pos):\n";
-            for (const auto& [f_pos, r_pos] : matches) {
+            /*std::cout << "Matches (fragment_pos, reference_pos):\n";
+            for (const auto& [f_pos, r_pos] : matches_fwd) {
                 std::cout << "(" << f_pos << ", " << r_pos << ")\n";
-            }
+            }*/
 
 
 
-            cerr << "DEBUG: Number of matches found = " << matches.size() << endl;
+            cerr << "DEBUG: Number of matches fwd found = " << matches_fwd.size() << endl;
+            cerr << "DEBUG: Number of matches rev found = " << matches_rev.size() << endl;
 
 
             //Longest Increasing Subsequence
-            auto chain = FindLIS(matches);
+
+            /*auto chain = FindLIS(matches);
             PrintLIS(chain);
             cerr << "DEBUG: LIS size = " << chain.size() << endl;
+            if (chain.empty()) continue;*/
+
+            auto chain_fwd = FindLIS(matches_fwd);
+            auto chain_rev = FindLIS(matches_rev);
+            vector<pair<unsigned int, unsigned int>> chain;
+            if (chain_fwd.size() >= chain_rev.size()){
+                chain = chain_fwd;
+            }
+            else{
+                chain = chain_rev;
+            }
             if (chain.empty()) continue;
 
             //beginning and end positions in the fragment and the reference (target)
@@ -736,16 +795,30 @@ int main(int argc, char* argv[]) {
             auto raw_frag_min = team::Minimize(seq->sequence().c_str(), seq->sequence().length(), k, w);
             auto frag_min = remove_duplicates(raw_frag_min);
 
-            vector<pair<unsigned int, unsigned int>> matches;
+            vector<pair<unsigned int, unsigned int>> matches_fwd;
+            vector<pair<unsigned int, unsigned int>> matches_rev;
             for (const auto& [hash, f_pos, f_strand] : frag_min) {
-                if (reference_index.count(hash)) {
-                    for (const auto& [r_pos, r_strand] : reference_index[hash]) {
-                        matches.emplace_back(f_pos, r_pos);
+                if (reference_index_fwd.count(hash)) {
+                    for (const auto& [r_pos, r_strand] : reference_index_fwd[hash]) {
+                        matches_fwd.emplace_back(f_pos, r_pos);
+                    }
+                }
+                if (reference_index_rev.count(hash)){
+                    for (const auto& [r_pos, r_strand] : reference_index_rev[hash]) {
+                        matches_rev.emplace_back(f_pos, r_pos);   
                     }
                 }
             }
 
-            auto chain = FindLIS(matches);
+            auto chain_fwd = FindLIS(matches_fwd);
+            auto chain_rev = FindLIS(matches_rev);
+            vector<pair<unsigned int, unsigned int>> chain;
+            if (chain_fwd.size() >= chain_rev.size()){
+                chain = chain_fwd;
+            }
+            else{
+                chain = chain_rev;
+            }
             if (chain.empty()) continue;
 
             unsigned int q_begin = chain.front().first-1;
