@@ -5,6 +5,8 @@
 #include <tuple>
 #include <string>
 #include <deque>
+#include <unordered_map>
+#include <set>
 
 namespace team {
 
@@ -25,6 +27,8 @@ class KMER {
         std::string ReverseComplement(const std::string& kmer);
         std::tuple<unsigned int, unsigned int, bool> GetTupleWithMinFirst(
             const std::deque<std::tuple<unsigned int, unsigned int, bool>>& window);
+        std::unordered_map<unsigned int, int> GetMinimizerFrequencies();
+        std::set<std::tuple<unsigned int, unsigned int, bool>> GetUniqueMinimizers();
     };
 }
 
