@@ -15,6 +15,7 @@
 #include "team_alignment/team_alignment.hpp" 
 #include "team_minimizers/team_minimizers.hpp"
 #include "team_minimizers/team_minimizers.hpp"
+#include <omp.h>
 
 #define VERSION "3.1.0"
 #define PROGRAM_NAME "toolForGenomeAllignment"
@@ -555,16 +556,16 @@ int main(int argc, char* argv[]) {
         // cout<<cigar<<endl;
         // cout<<score<<endl;
 
-        for (const auto& seq : fragmentSequencesFASTA) {
-            cout << "DEBUG: pocinje" << endl;
-
-            //minimizers in the seq fragment - returns vector tuple(hash, position, strand)
+        #pragma omp parallel for schedule(dynamic)
+        for (int i = 0; i < fragmentSequencesFASTA.size(); ++i) {
+            auto& seq = fragmentSequencesFASTA[i];
             KMER frag(true);
             if(!statistic){ frag.SetFrequenciesCount(false);}
             else{ frag.SetFrequenciesCount(true);}
+
+            //minimizers in the seq fragment - returns vector tuple(hash, position, strand)
             auto raw_frag_min = frag.Minimize(seq->data().c_str(), seq->data().length(), k, w);
             auto frag_min = remove_duplicates(raw_frag_min);
-
 
             if(statistic){
                 // Get unique minimizers and number of occurance of unique minimizers:
@@ -582,7 +583,6 @@ int main(int argc, char* argv[]) {
                 cout<<"Fraction of singletons on forward strand: "<<singleton_fraction_fwd<<endl;
             }
 
-
             vector<pair<unsigned int, unsigned int>> matches_fwd;
             vector<pair<unsigned int, unsigned int>> matches_rev;
             for (const auto& [hash, f_pos, f_strand] : frag_min) {
@@ -595,26 +595,6 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
-
-            //ISPIS MATCHES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            /*std::cout << "Matches (fragment_pos, reference_pos):\n";
-            for (const auto& [f_pos, r_pos] : matches_fwd) {
-                std::cout << "(" << f_pos << ", " << r_pos << ")\n";
-            }*/
-
-
-
-            // cerr << "DEBUG: Number of matches fwd found = " << matches_fwd.size() << endl;
-            // cerr << "DEBUG: Number of matches rev found = " << matches_rev.size() << endl;
-
-
-            //Longest Increasing Subsequence
-
-            /*auto chain = FindLIS(matches);
-            PrintLIS(chain);
-            cerr << "DEBUG: LIS size = " << chain.size() << endl;
-            if (chain.empty()) continue;*/
-
             auto chain_fwd = FindLIS(matches_fwd);
             //PrintLIS(chain_fwd);
             auto chain_rev = FindLIS(matches_rev);
@@ -634,34 +614,27 @@ int main(int argc, char* argv[]) {
             unsigned int t_begin = chain.front().second-1;
             unsigned int t_end = chain.back().second + k-2;
 
-            //cerr << "DEBUG: " << q_begin << q_end << t_begin << t_end << endl;
-
-            // // Ograniči q_end i t_end ako prelaze duljinu sekvence
-            // if (q_end > seq->data().size()) {
-            //     cerr << "DEBUG: q_end prevelik (" << q_end << "), postavljam na " << seq->data().size() << endl;
-            //     q_end = seq->data().size();
-            // }
-            // if (t_end > reference.size()) {
-            //     cerr << "DEBUG: t_end prevelik (" << t_end << "), postavljam na " << reference.size() << endl;
-            //     t_end = reference.size();
-            // }
-
-            // if (q_end > seq->data().size()) q_end = seq->data().size();
-            // if (t_end > reference.size()) t_end = reference.size();
-
-            // if (q_end <= q_begin || t_end <= t_begin) {
-            //     cerr << "ERROR: Invalid range for alignment" << endl;
-            //     continue;
-            // }
-
-            // cerr << "DEBUG: q_begin = " << q_begin << ", q_end = " << q_end
-            //     << ", t_begin = " << t_begin << ", t_end = " << t_end << endl;
-
-
             string cigar;
             unsigned int ref_offset;
             int score;
             string strand;
+
+            if(chain == chain_fwd){
+                    strand = "+";
+                    score = team::Align(
+                        seq->data().c_str() + q_begin, q_end - q_begin + 1,
+                        reference.c_str() + t_begin, t_end - t_begin + 1,
+                        align_type_, match, mismatch, gap,
+                        output_cigar ? &cigar : nullptr, &ref_offset);
+                }
+            else{
+                    strand = "-";
+                    score = team::Align(
+                        seq->data().c_str() + q_begin, q_end - q_begin + 1,
+                        reference_rev.c_str() + t_begin, t_end - t_begin + 1,
+                        align_type_, match, mismatch, gap,
+                        output_cigar ? &cigar : nullptr, &ref_offset);
+            }
 
             try{ 
                 if(chain == chain_fwd){
@@ -680,40 +653,37 @@ int main(int argc, char* argv[]) {
                         align_type_, match, mismatch, gap,
                         output_cigar ? &cigar : nullptr, &ref_offset);
                 }
-                
-                
                 } catch (const std::exception& e) {
                     cerr << "ERROR: Exception during Align: " << e.what() << endl;
                     continue;
                 }
 
-            // cerr << "DEBUG: Alignment score = " << score << ", ref_offset = " << ref_offset << endl;
-
-
-            // cerr << "DEBUG: Reached output stage" << endl;
-            cout << seq->name() << "\t" << seq->data().size() << "\t" << q_begin << "\t" << (q_end + 1)
+            #pragma omp critical
+            {
+                std::cout << seq->name() << "\t" << seq->data().size() << "\t" << q_begin << "\t" << (q_end + 1)
                 << "\t"<< strand <<"\t" << referenceSequence.front()->name() << "\t" << reference.length()
                 << "\t" << (chain==chain_fwd ? t_begin : reference_rev.length() - t_end - 1) 
                 << "\t" <<(chain==chain_fwd ?  (t_end + 1) : reference_rev.length() - t_begin) 
                 << "\t" << score << "\t" << (q_end - q_begin + 1)
                 << "\t60";
-            if (output_cigar) {
-                cout << "\tcg:Z:" << cigar;
+            
+                if (output_cigar) {
+                    std::cout << "\tcg:Z:" << cigar;
+                }
+                std::cout<<std::endl;
             }
-            // cerr << "\nDEBUG: Output completed" << endl;
-            cout << endl;
-        }
-
-        
+            
+        }        
     }
 
     if(isFastq){
         if(statistic){
-            cout << endl << "Basic statistic for fragments of genome"<<endl;
-            cout << "------------------------------------"<<endl;
+            std::cout << std::endl << "Basic statistic for fragments of genome"<<std::endl;
+            std::cout << "------------------------------------"<<std::endl;
             printBasicStatisticFASTQ(file2);
         }
         
+        #pragma omp parallel for schedule(dynamic)
         for (const auto& seq : fragmentSequencesFASTQ) {
             KMER frag(true);
             auto raw_frag_min = frag.Minimize(seq->sequence().c_str(), seq->sequence().length(), k, w);
@@ -759,21 +729,21 @@ int main(int argc, char* argv[]) {
                 align_type_, match, mismatch, gap,
                 output_cigar ? &cigar : nullptr, &ref_offset);
 
-            cout << seq->name() << "\t" << seq->sequence().size() << "\t" << q_begin << "\t" << (q_end + 1)
-                << "\t+\t" << referenceSequence.front()->name() << "\t" << reference.length()
-                << "\t" << t_begin << "\t" << (t_end + 1) << "\t" << score << "\t" << (q_end - q_begin + 1)
-                << "\t60";
-            if (output_cigar) {
-                cout << "\tcg:Z:" << cigar;
+            #pragma omp critical
+            {
+                std::cout << seq->name() << "\t" << seq->sequence().size() << "\t" << q_begin << "\t" << (q_end + 1)
+                    << "\t+\t" << referenceSequence.front()->name() << "\t" << reference.length()
+                    << "\t" << t_begin << "\t" << (t_end + 1) << "\t" << score << "\t" << (q_end - q_begin + 1)
+                    << "\t60";
+                if (output_cigar) {
+                    std::cout << "\tcg:Z:" << cigar;
+                }
+                std::cout << std::endl;
             }
-            cout << endl;
         }
 
     }
     
-
-
-
     return 0;
 }
 
