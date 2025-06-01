@@ -22,6 +22,7 @@
 using namespace std;
 using namespace team;
 
+//Marta Kekić
 std::vector<std::tuple<unsigned int, unsigned int, bool>> remove_duplicates(
     const std::vector<std::tuple<unsigned int, unsigned int, bool>>& input) {
 
@@ -51,6 +52,7 @@ void PrintReferenceIndex(const std::unordered_map<unsigned int, std::set<std::pa
     }
 }
 
+//Anamarija Kic
 // Reverse complement of a DNA string
     string ReverseComplement(const string& kmer) { 
         //ACG -> GCA -> CGT!!
@@ -166,10 +168,7 @@ void printHelp(){
         << "\t  -f FREQUENCY_THRESHOLD   Frequency threshold factor (default: 0.001)\n"
         << "\t  -c                       Output CIGAR string\n"
         << "\t  -h, --help               Show this help message\n"
-        << "\t  --version                Show version information\n"
-        << "\t  -k                       K-mer size\n"
-        << "\t  -w                       Window size\n"
-        << "\t  -f                       Percentage of top frequent minimizers\n";
+        << "\t  --version                Show version information\n";
 }
 
 void printBasicStatisticFASTA(string file){
@@ -219,6 +218,7 @@ void printBasicStatisticFASTA(string file){
     // }
 }
 
+//Marta Kekić
 void printBasicStatisticFASTQ(string file){
     auto p = bioparser::Parser<SequenceFASTQ>::Create<bioparser::FastqParser>(file);
     
@@ -276,38 +276,6 @@ void printBasicStatisticFASTQ(string file){
 }
 
 //Longest Increasing Subsequence
-//vector<pair<unsigned int, unsigned int>> FindLIS(const vector<pair<unsigned int, unsigned int>>& matches) {
-    /*vector<unsigned int> dp, prev(matches.size());
-    vector<size_t> lis;*/
-
-    //looking for Increasing Subsequence using binary search O(nlog(n))
-    //for (size_t i = 0; i < matches.size(); ++i) {
-        //std::cerr << "dp size: " << dp.size() << ", i: " << i << "\n";
-
-        /*auto it = lower_bound(dp.begin(), dp.end(), matches[i].second,
-            [&](unsigned int a, unsigned int b) { return matches[dp[a]].second < b; });
-        */
-       /*  auto it = std::lower_bound(dp.begin(), dp.end(), i, 
-        [&](unsigned int a, unsigned int b) { return matches[a].second < matches[b].second; });
-
-        if (it == dp.end()) {
-            prev[i] = dp.empty() ? -1 : dp.back();
-            dp.push_back(i);
-        } else {
-            *it = i;
-            prev[i] = (it == dp.begin()) ? -1 : dp[it - dp.begin() - 1];
-        }
-    }
-
-    //chain reconstruction
-    vector<pair<unsigned int, unsigned int>> result;
-    for (int i = dp.empty() ? -1 : dp.back(); i >= 0; i = prev[i]) {
-        result.push_back(matches[i]);
-    }
-    reverse(result.begin(), result.end());
-    return result;
-}*/
-
 vector<pair<unsigned int, unsigned int>> FindLIS(const vector<pair<unsigned int, unsigned int>>& matches) {
     size_t n = matches.size();
     if (n == 0) return {};
@@ -319,7 +287,8 @@ vector<pair<unsigned int, unsigned int>> FindLIS(const vector<pair<unsigned int,
         for (size_t j = 0; j < i; ++j) {
             //check strictly increasing order on the reference positions (second)
             //and disallow multiple fragment positions (first) from matching to the same one
-            if (matches[i].second > matches[j].second && lis[i] < lis[j] + 1 && matches[i].first != matches[j].first) {
+            if (matches[i].second > matches[j].second && lis[i] < lis[j] + 1 && matches[i].first != matches[j].first
+            && matches[i].first - matches[j].first < 5000 && matches[i].second - matches[j].second < 5000) {
                 lis[i] = lis[j] + 1;
                 prev[i] = j;
             }
@@ -358,7 +327,7 @@ int main(int argc, char* argv[]) {
     double f = 0.001;
     bool output_cigar = false;
 
-
+    //Anamarija Kic
     if (argc < 2) {
         std::cerr << "Error: Not enough arguments"<<endl;
         printHelp();
@@ -437,8 +406,8 @@ int main(int argc, char* argv[]) {
     auto referenceSequence = referenceParser->Parse(-1);
     printBasicStatisticFASTA(file1);
 
+    //Marta Kekić
     //map for minimizer index in the reference genome (key-minimizer hash, (position, orientation))
-    //unordered_map<unsigned int, vector<pair<unsigned int, bool>>> reference_index;
     unordered_map<unsigned int, set<pair<unsigned int, bool>>> reference_index_fwd;
     unordered_map<unsigned int, int> minimizer_frequencies_fwd;
     unordered_map<unsigned int, set<pair<unsigned int, bool>>> reference_index_rev;
@@ -448,7 +417,7 @@ int main(int argc, char* argv[]) {
     //minimizers in the reference
     KMER ref(true);
     auto minimizers_fwd =ref.Minimize(reference.c_str(), reference.length(), k, w);
-    PrintMinimizersVector(minimizers_fwd, k);
+    //PrintMinimizersVector(minimizers_fwd, k);
 
     //complement of reference
     auto& reference_rev = ReverseComplement(reference);
@@ -460,15 +429,6 @@ int main(int argc, char* argv[]) {
 
     cerr << "DEBUG: Number of minimizers in ref fwd before f = " << minimizers_fwd.size() << endl;
     cerr << "DEBUG: Number of minimizers in ref rev before f = " << minimizers_rev.size() << endl;
-
-
-    /*cout << "Minimizers for reference: " << referenceSequence.front()->name() << "\n";
-            for (const auto& [hash, pos, strand] : minimizers) {
-                cout << "  hash: " << hash
-                    << ", position: " << pos
-                    << ", strand: " << (strand ? "+" : "-") << "\n";
-            }*/
-
 
     //how frequent is the minimizer in the reference
     for (const auto& [hash, pos, strand] : minimizers_fwd) {
@@ -499,6 +459,7 @@ int main(int argc, char* argv[]) {
 
     
 
+    //Anamarija Kic
     // while the second file will contain a set of fragments in either FASTA or FASTQ format.
     // --------------------------------------------------------------------------------------
     cout << endl << "Basic statistic for fragments of genome"<<endl;
@@ -587,13 +548,13 @@ int main(int argc, char* argv[]) {
         cout<<cigar<<endl;
         cout<<score<<endl;*/
 
+        //Marta Kekić
         cerr << "DEBUG: Number of fragment sequences = " << fragmentSequencesFASTA.size() << endl;
         cerr << "DEBUG: Reference length = " << reference.length() << endl;
         cerr << "DEBUG: Reference index fwd size = " << reference_index_fwd.size() << endl;
         cerr << "DEBUG: Reference index rev size = " << reference_index_rev.size() << endl;
 
         //PrintReferenceIndex(reference_index_fwd);
-
 
 
 
@@ -606,19 +567,11 @@ int main(int argc, char* argv[]) {
 
             PrintMinimizersVector(frag_min, k);
 
-            /*cout << "Minimizers for fragment: " << seq->name() << "\n";
-            for (const auto& [hash, pos, strand] : frag_min) {
-                cout << "  hash: " << hash
-                    << ", position: " << pos
-                    << ", strand: " << (strand ? "+" : "-") << "\n";
-            }*/
-
             cerr << "DEBUG: Number of minimizers in fragment = " << frag_min.size() << endl;
             cerr << "DEBUG: Number of minimizers in reference fwd = " << reference_index_fwd.size() << endl;
             cerr << "DEBUG: Number of minimizers in reference rev = " << reference_index_rev.size() << endl;
 
 
-            //vector<pair<unsigned int, unsigned int>> matches;
             //finding matches in the reference genome for the minimizers in frag_min
 
             //*****************************************************************MATCHES KAD SE SALJU SAMO MANJI MINIMIZERI */
@@ -644,13 +597,11 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            //ISPIS MATCHES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            /*std::cout << "Matches (fragment_pos, reference_pos):\n";
+            //matches print
+            std::cout << "Matches (fragment_pos, reference_pos):\n";
             for (const auto& [f_pos, r_pos] : matches_fwd) {
                 std::cout << "(" << f_pos << ", " << r_pos << ")\n";
-            }*/
-
-
+            }
 
             cerr << "DEBUG: Number of matches fwd found = " << matches_fwd.size() << endl;
             cerr << "DEBUG: Number of matches rev found = " << matches_rev.size() << endl;
@@ -664,9 +615,9 @@ int main(int argc, char* argv[]) {
             if (chain.empty()) continue;*/
 
             auto chain_fwd = FindLIS(matches_fwd);
-            //PrintLIS(chain_fwd);
+            PrintLIS(chain_fwd);
             auto chain_rev = FindLIS(matches_rev);
-            //PrintLIS(chain_rev);
+            PrintLIS(chain_rev);
             vector<pair<unsigned int, unsigned int>> chain;
             if (chain_fwd.size() >= chain_rev.size()){
                 chain = chain_fwd;
@@ -681,18 +632,6 @@ int main(int argc, char* argv[]) {
             unsigned int q_end = chain.back().first + k-2;
             unsigned int t_begin = chain.front().second-1;
             unsigned int t_end = chain.back().second + k-2;
-
-            //cerr << "DEBUG: " << q_begin << q_end << t_begin << t_end << endl;
-
-            // Ograniči q_end i t_end ako prelaze duljinu sekvence
-            if (q_end > seq->data().size()) {
-                cerr << "DEBUG: q_end prevelik (" << q_end << "), postavljam na " << seq->data().size() << endl;
-                q_end = seq->data().size();
-            }
-            if (t_end > reference.size()) {
-                cerr << "DEBUG: t_end prevelik (" << t_end << "), postavljam na " << reference.size() << endl;
-                t_end = reference.size();
-            }
 
             if (q_end > seq->data().size()) q_end = seq->data().size();
             if (t_end > reference.size()) t_end = reference.size();
@@ -748,11 +687,10 @@ int main(int argc, char* argv[]) {
             if (output_cigar) {
                 cout << "\tcg:Z:" << cigar;
             }
-            cerr << "\nDEBUG: Output completed" << endl;
             cout << endl;
         }
 
-        /* 
+        /* Anamarija Kic
         // Get unique minimizers and Number of occurance of unique minimizers:
         // std::set<std::tuple<unsigned int, unsigned int, bool>> unique_minimizers;
         unordered_map<unsigned int, size_t> minimizer_counts;
@@ -810,6 +748,7 @@ int main(int argc, char* argv[]) {
         }*/
     }
 
+    //Marta Kekić
     if(isFastq){
         printBasicStatisticFASTQ(file2);
         for (const auto& seq : fragmentSequencesFASTQ) {
@@ -850,27 +789,51 @@ int main(int argc, char* argv[]) {
 
             string cigar;
             unsigned int ref_offset;
+            int score;
+            string strand;
 
-            int score = team::Align(
-                seq->sequence().c_str() + q_begin, q_end - q_begin,
-                reference.c_str() + t_begin, t_end - t_begin,
-                align_type_, match, mismatch, gap,
-                output_cigar ? &cigar : nullptr, &ref_offset);
+            try{ 
+                if(chain == chain_fwd){
+                    strand = "+";
+                    score = team::Align(
+                        seq->sequence().c_str() + q_begin, q_end - q_begin + 1,
+                        reference.c_str() + t_begin, t_end - t_begin + 1,
+                        align_type_, match, mismatch, gap,
+                        output_cigar ? &cigar : nullptr, &ref_offset);
+                }
+                else{
+                    strand = "-";
+                    score = team::Align(
+                        seq->sequence().c_str() + q_begin, q_end - q_begin + 1,
+                        reference_rev.c_str() + t_begin, t_end - t_begin + 1,
+                        align_type_, match, mismatch, gap,
+                        output_cigar ? &cigar : nullptr, &ref_offset);
+                }
+                
+                
+                } catch (const std::exception& e) {
+                    cerr << "ERROR: Exception during Align: " << e.what() << endl;
+                    continue;
+                }
 
+            cerr << "DEBUG: Alignment score = " << score << ", ref_offset = " << ref_offset << endl;
+
+
+            cerr << "DEBUG: Reached output stage" << endl;
             cout << seq->name() << "\t" << seq->sequence().size() << "\t" << q_begin << "\t" << (q_end + 1)
-                << "\t+\t" << referenceSequence.front()->name() << "\t" << reference.length()
-                << "\t" << t_begin << "\t" << (t_end + 1) << "\t" << score << "\t" << (q_end - q_begin + 1)
+                << "\t"<< strand <<"\t" << referenceSequence.front()->name() << "\t" << reference.length()
+                << "\t" << (chain==chain_fwd ? t_begin : reference_rev.length() - t_end - 1) 
+                << "\t" <<(chain==chain_fwd ?  (t_end + 1) : reference_rev.length() - t_begin) 
+                << "\t" << score << "\t" << (q_end - q_begin + 1)
                 << "\t60";
             if (output_cigar) {
                 cout << "\tcg:Z:" << cigar;
             }
             cout << endl;
+
         }
 
     }
-    
-
-
 
     return 0;
 }

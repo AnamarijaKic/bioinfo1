@@ -11,6 +11,7 @@
 
 using namespace std;
 
+//Anamarija Kic
 namespace team {
 
     // class KMER{
@@ -82,10 +83,10 @@ namespace team {
 
             // Reverse complement of a DNA string
             string KMER::ReverseComplement(const string& kmer) { 
-                // ako imamo bazu ACG reverse complement nastane kao ACG -> GCA -> CGT!!
-                // 1. reversamo sekvencu
+                //if we have base ACG reverse complement is made in this way => ACG -> GCA -> CGT!!
+                // 1. reversing the sequence
                 string rc(kmer.rbegin(), kmer.rend());
-                // 2. komplementiramo sekvencu
+                // 2. complement
                 for (char& c : rc) {
                     switch (c) {
                         case 'A': c = 'T'; break;
@@ -159,7 +160,7 @@ namespace team {
                         }
                 }
 
-                // NORMAL WINDOWS - najbolje za sad
+                // NORMAL WINDOWS
                 for (unsigned int i = 0; i <= sequence_len-kmer_len; i++){
                     if(i>=window_len){ window.pop_front();}
 
@@ -183,7 +184,7 @@ namespace team {
                     }
                 }
 
-                // KRAJ -> end-minimizer:
+                // END -> end-minimizer:
                 for(unsigned int u=kmer_len; u<(window_len+kmer_len-1);u++){
                     if (sequence_len < u) break;
                     deque<tuple<unsigned int, unsigned int, bool>> end_window;
