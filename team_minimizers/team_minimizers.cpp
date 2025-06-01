@@ -34,6 +34,11 @@ namespace team {
                 return minimizer_frequencies;
             }
 
+            // Enable calculating frequencies of minimizers
+            void KMER::SetFrequenciesCount(bool set){
+                frequencies = set;
+            }
+
             // Mapping from bit shifted values to string
             string KMER::MappKmerBitToString(unsigned int kmer, unsigned int kmer_len){
                 std::string mapp(kmer_len, 'X');
@@ -64,19 +69,19 @@ namespace team {
             unsigned int KMER::MappSeqCharPointerToBit(const char* seq, unsigned int kmer_len){
                 unsigned int mapp = 0;
                 // Value mapping for positions (original order)
-                // unordered_map<char, unsigned int> base_value = {
-                //     {'C', 0},
-                //     {'A', 1},
-                //     {'T', 2},
-                //     {'G', 3}
-                // };
-
-                 unordered_map<char, unsigned int> base_value = {
-                    {'C', 1},
-                    {'A', 0},
-                    {'T', 3},
-                    {'G', 2}
+                unordered_map<char, unsigned int> base_value = {
+                    {'C', 0},
+                    {'A', 1},
+                    {'T', 2},
+                    {'G', 3}
                 };
+
+                //  unordered_map<char, unsigned int> base_value = {
+                //     {'C', 1},
+                //     {'A', 0},
+                //     {'T', 3},
+                //     {'G', 2}
+                // };
 
 
                 for (int i=0; i<kmer_len; i++){
@@ -126,6 +131,11 @@ namespace team {
                         unsigned int kmer_len,
                         unsigned int window_len) {
 
+                // Clear this two private variables
+                minimizer_frequencies.clear();
+                unique_minmizers.clear();
+
+                
                 // Structure that holds all minimizers
                 vector<tuple<unsigned int, unsigned int, bool>> minimizers;
 
@@ -206,9 +216,9 @@ namespace team {
                         // } else{     mapp_bit = MappSeqCharPointerToBit(sequence+sequence_len-kmer_len-i, kmer_len);
                         // }
 
-                            end_window.push_back(make_tuple(mapp_bit, i+1, is_fwd)); 
+                        end_window.push_back(make_tuple(mapp_bit, i+1, is_fwd)); 
                     }
-                    auto& best = GetTupleWithMinFirst(window);
+                    auto& best = GetTupleWithMinFirst(end_window);
                     minimizers.push_back(best);
                     unique_minmizers.insert(best);
 

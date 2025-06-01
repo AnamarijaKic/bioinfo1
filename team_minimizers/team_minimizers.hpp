@@ -29,6 +29,7 @@ class KMER {
             const std::deque<std::tuple<unsigned int, unsigned int, bool>>& window);
         std::unordered_map<unsigned int, int> GetMinimizerFrequencies();
         std::set<std::tuple<unsigned int, unsigned int, bool>> GetUniqueMinimizers();
+        void SetFrequenciesCount(bool set);
     };
 }
 
