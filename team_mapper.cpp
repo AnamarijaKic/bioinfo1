@@ -448,14 +448,14 @@ int main(int argc, char* argv[]) {
     //minimizers in the reference
     KMER ref(true);
     auto minimizers_fwd =ref.Minimize(reference.c_str(), reference.length(), k, w);
-    //PrintMinimizersVector(minimizers_fwd, k);
+    PrintMinimizersVector(minimizers_fwd, k);
 
     //complement of reference
     auto& reference_rev = ReverseComplement(reference);
     //minimizers in the complement reference
     KMER ref_rev(false);
     auto minimizers_rev = ref_rev.Minimize(reference_rev.c_str(), reference_rev.length(), k, w);
-    //PrintMinimizersVector(minimizers_rev, k);
+    PrintMinimizersVector(minimizers_rev, k);
 
 
     cerr << "DEBUG: Number of minimizers in ref fwd before f = " << minimizers_fwd.size() << endl;
@@ -604,7 +604,7 @@ int main(int argc, char* argv[]) {
             auto raw_frag_min = frag.Minimize(seq->data().c_str(), seq->data().length(), k, w);
             auto frag_min = remove_duplicates(raw_frag_min);
 
-            //PrintMinimizersVector(frag_min, k);
+            PrintMinimizersVector(frag_min, k);
 
             /*cout << "Minimizers for fragment: " << seq->name() << "\n";
             for (const auto& [hash, pos, strand] : frag_min) {
@@ -709,9 +709,11 @@ int main(int argc, char* argv[]) {
             string cigar;
             unsigned int ref_offset;
             int score;
+            string strand;
 
             try{ 
                 if(chain == chain_fwd){
+                    strand = "+";
                     score = team::Align(
                         seq->data().c_str() + q_begin, q_end - q_begin + 1,
                         reference.c_str() + t_begin, t_end - t_begin + 1,
@@ -719,6 +721,7 @@ int main(int argc, char* argv[]) {
                         output_cigar ? &cigar : nullptr, &ref_offset);
                 }
                 else{
+                    strand = "-";
                     score = team::Align(
                         seq->data().c_str() + q_begin, q_end - q_begin + 1,
                         reference_rev.c_str() + t_begin, t_end - t_begin + 1,
@@ -737,8 +740,10 @@ int main(int argc, char* argv[]) {
 
             cerr << "DEBUG: Reached output stage" << endl;
             cout << seq->name() << "\t" << seq->data().size() << "\t" << q_begin << "\t" << (q_end + 1)
-                << "\t+\t" << referenceSequence.front()->name() << "\t" << reference.length()
-                << "\t" << t_begin << "\t" << (t_end + 1) << "\t" << score << "\t" << (q_end - q_begin + 1)
+                << "\t"<< strand <<"\t" << referenceSequence.front()->name() << "\t" << reference.length()
+                << "\t" << (chain==chain_fwd ? t_begin : reference_rev.length() - t_end - 1) 
+                << "\t" <<(chain==chain_fwd ?  (t_end + 1) : reference_rev.length() - t_begin) 
+                << "\t" << score << "\t" << (q_end - q_begin + 1)
                 << "\t60";
             if (output_cigar) {
                 cout << "\tcg:Z:" << cigar;

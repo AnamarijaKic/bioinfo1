@@ -64,18 +64,11 @@ namespace team {
             unsigned int KMER::MappSeqCharPointerToBit(const char* seq, unsigned int kmer_len){
                 unsigned int mapp = 0;
                 // Value mapping for positions (original order)
-                // unordered_map<char, unsigned int> base_value = {
-                //     {'C', 0},
-                //     {'A', 1},
-                //     {'T', 2},
-                //     {'G', 3}
-                // };
-
-                 unordered_map<char, unsigned int> base_value = {
-                    {'C', 1},
-                    {'A', 0},
-                    {'T', 3},
-                    {'G', 2}
+                unordered_map<char, unsigned int> base_value = {
+                    {'C', 0},
+                    {'A', 1},
+                    {'T', 2},
+                    {'G', 3}
                 };
 
 
@@ -208,7 +201,7 @@ namespace team {
 
                             end_window.push_back(make_tuple(mapp_bit, i+1, is_fwd)); 
                     }
-                    auto& best = GetTupleWithMinFirst(window);
+                    auto& best = GetTupleWithMinFirst(end_window);
                     minimizers.push_back(best);
                     unique_minmizers.insert(best);
 
