@@ -216,7 +216,7 @@ namespace team {
                 std::cout<<"DEBUG: Prosao while" << "\n";
 
                 std::reverse(result.begin(), result.end());
-                if(cigar != nullptr){
+                //if(cigar != nullptr){
                     *cigar = result;
                 }
 
@@ -299,5 +299,4 @@ namespace team {
                 return -11111111; // RAZMISLITI KAJ STAVITI ZA DEFAULT ******************************************
         }       
     }
-}
 }

@@ -2,3 +2,5 @@
 GTACGT
 >seq2
 TACGATG
+>seq3
+ACGTAC
