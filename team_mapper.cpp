@@ -16,12 +16,13 @@
 #include "team_minimizers/team_minimizers.hpp"
 #include "team_minimizers/team_minimizers.hpp"
 
-#define VERSION "0.1.0"
+#define VERSION "3.1.0"
 #define PROGRAM_NAME "toolForGenomeAllignment"
 
 using namespace std;
 using namespace team;
 
+// Removes duplicates from vector of minimizers
 std::vector<std::tuple<unsigned int, unsigned int, bool>> remove_duplicates(
     const std::vector<std::tuple<unsigned int, unsigned int, bool>>& input) {
 
@@ -41,22 +42,12 @@ std::vector<std::tuple<unsigned int, unsigned int, bool>> remove_duplicates(
     return result;
 }
 
-void PrintReferenceIndex(const std::unordered_map<unsigned int, std::set<std::pair<unsigned int, bool>>>& reference_index) {
-    for (const auto& [minimizer_hash, positions_set] : reference_index) {
-        std::cout << "Minimizer hash: " << minimizer_hash << "\n";
-        for (const auto& [position, is_original_strand] : positions_set) {
-            std::cout << "  Position: " << position
-                      << ", Strand: " << (is_original_strand ? "+" : "-") << "\n";
-        }
-    }
-}
-
 // Reverse complement of a DNA string
     string ReverseComplement(const string& kmer) { 
         //ACG -> GCA -> CGT!!
-        // 1. reverse seq
-        string rc(kmer.rbegin(), kmer.rend()); //https://cplusplus.com/reference/string/string/rbegin/
-        // 2. compl seq
+        // 1. reverse sequence
+        string rc(kmer.rbegin(), kmer.rend()); 
+        // 2. complement sequence
         for (char& c : rc) {
             switch (c) {
                 case 'A': c = 'T'; break;
@@ -68,60 +59,73 @@ void PrintReferenceIndex(const std::unordered_map<unsigned int, std::set<std::pa
         return rc;
     }
 
-// Mapping from bit shifted values to string
+// Mapping from bit shifted values to string for printing out values
 string MappKmerBitToStringFWD(unsigned int kmer, unsigned int kmer_len){
     std::string mapp(kmer_len, 'X');
+    // // Value mapping for positions (original order)
+    // unordered_map<unsigned int, char> base_value = {
+    //     {0,'C'},
+    //     {1,'A'},
+    //     {2,'T'},
+    //     {3,'G'}
+    // };
     // Value mapping for positions (original order)
     unordered_map<unsigned int, char> base_value = {
-        {0,'C'},
-        {1,'A'},
-        {2,'T'},
-        {3,'G'}
+        {0,'0'},
+        {1,'1'},
+        {2,'2'},
+        {3,'3'}
     };
-
     for (int i = kmer_len - 1; i >= 0; --i){
         unsigned int bits = kmer & 0b11;
         mapp[i] = base_value[bits];
         kmer>>=2;
     }
-
     return mapp;
 }
 
+// Printing out minimizers from reference genome
+void PrintReferenceIndex(const std::unordered_map<unsigned int, std::set<std::pair<unsigned int, bool>>>& reference_index, unsigned int kmer_len) {
+    for (const auto& [minimizer_hash, positions_set] : reference_index) {
+        std::cout << "Minimizer: " << MappKmerBitToStringFWD(minimizer_hash, kmer_len) << "\n";
+        for (const auto& [position, is_original_strand] : positions_set) {
+            std::cout << "  Position: " << position
+                      << ", Strand: " << (is_original_strand ? "+" : "-") << "\n";
+        }
+    }
+}
+
+// Printing minimizers from KMER.Minimize function
 void PrintMinimizersVector(const vector<tuple<unsigned int, unsigned int, bool>>& minimizers, unsigned int k) {
     for (const auto& t : minimizers) {
         unsigned int hash = get<0>(t);
         bool is_fwd = get<2>(t);
         string mapp = MappKmerBitToStringFWD(hash, k);
-        // if(is_fwd){
-        //     mapp = MappKmerBitToStringFWD(hash, k);
-        // } else{
-        //     mapp = MappKmerBitToStringREV(hash, k);
-        // }
-        
         unsigned int position = get<1>(t);
         
-        cout << "Hash: " << mapp
+        cout << "Minimizer: " << mapp
              << ", Position: " << position
              << ", Strand: " << (is_fwd ? "FWD" : "REV") << endl;
     }
 }
 
-void PrintMinimizersSet(const std::set<std::tuple<unsigned int, unsigned int, bool>>& minimizers) {
+// Printing set of minimizers
+void PrintMinimizersSet(const std::set<std::tuple<unsigned int, unsigned int, bool>>& minimizers, unsigned int kmer_len) {
     for (const auto& t : minimizers) {
         unsigned int hash = std::get<0>(t);
         unsigned int position = std::get<1>(t);
         bool is_fwd = std::get<2>(t);
 
-        std::cout << "Hash: " << hash
+        std::cout << "Minimizer: " << MappKmerBitToStringFWD(hash, kmer_len)
                   << ", Position: " << position
                   << ", Strand: " << (is_fwd ? "FWD" : "REV") << std::endl;
     }
 }
 
-struct SequenceFASTA {  // or any other name
+// Structure needed for bioparsers reading from FASTA files
+struct SequenceFASTA {  
     public:
-        SequenceFASTA(  // required arguments
+        SequenceFASTA(  
             const char* name, std::uint32_t name_len,
             const char* data, std::uint32_t data_len) {
                 name_ = string(name,name_len);
@@ -134,9 +138,10 @@ struct SequenceFASTA {  // or any other name
         string data_;
 };
 
-struct SequenceFASTQ {  // or any other name
+// Structure needed for bioparsers reading from FASTQ files
+struct SequenceFASTQ {  
     public:
-        SequenceFASTQ(  // required arguments
+        SequenceFASTQ(  
             const char* name, uint32_t name_len,
             const char* sequence, uint32_t sequence_len,
             const char* quality, uint32_t quality_len) {
@@ -152,6 +157,7 @@ struct SequenceFASTQ {  // or any other name
         string quality_;
 };
 
+// Printing help for input
 void printHelp(){
     cout<<endl;
     cout<<"Usage: "<<PROGRAM_NAME<<"[options] <file1> <file2>"<<endl;
@@ -167,18 +173,15 @@ void printHelp(){
         << "\t  -c                       Output CIGAR string\n"
         << "\t  -h, --help               Show this help message\n"
         << "\t  --version                Show version information\n"
-        << "\t  -k                       K-mer size\n"
-        << "\t  -w                       Window size\n"
-        << "\t  -f                       Percentage of top frequent minimizers\n";
+        << "\t  -s                       Basic statistic for first and second file\n"
+        ;
 }
 
+// Printing basic statistic for FASTA file
 void printBasicStatisticFASTA(string file){
     auto p = bioparser::Parser<SequenceFASTA>::Create<bioparser::FastaParser>(file);
-    // while(true){
-    //     // parse whole file
     auto s = p->Parse(-1);
-    // if (s.empty()) break;
-
+    
     size_t totalNumberOfBases = 0;
     size_t totalNumberOfSequences = 0;
     size_t maxLength = 0;
@@ -198,15 +201,15 @@ void printBasicStatisticFASTA(string file){
         if (minLength>size){ minLength = size; }            
     }
         
-    cout << "Total number of sequences: " << totalNumberOfSequences << endl;
-    cout << "Average length of sequences: " << totalNumberOfBases/totalNumberOfSequences << endl;
+    cout << "Total number of sequences: " << totalNumberOfSequences <<endl;
+    cout << "Average length of sequences: " << totalNumberOfBases/totalNumberOfSequences <<endl;
     cout << "Maximal length of sequence: " << maxLength <<endl;
     cout << "Minimal length of sequence: " << minLength <<endl;
-    // std::cout << "Total bases: " << totalNumberOfBases << std::endl;
+    // cout << "Total number of bases: " << totalNumberOfBases <<endl;
 
     // N50 value
     size_t cumulativeSum = 0;
-    sort(allLengths.begin(), allLengths.end());
+    sort(allLengths.begin(), allLengths.end(), greater<size_t>());
     for (size_t currentLength : allLengths){
         cumulativeSum += currentLength;
         if (cumulativeSum >= (totalNumberOfBases/2)){
@@ -214,11 +217,9 @@ void printBasicStatisticFASTA(string file){
             break;
         }
     }
-
-        
-    // }
 }
 
+// Printing basic statistic for FASTQ file
 void printBasicStatisticFASTQ(string file){
     auto p = bioparser::Parser<SequenceFASTQ>::Create<bioparser::FastqParser>(file);
     
@@ -254,15 +255,15 @@ void printBasicStatisticFASTQ(string file){
         if (minLength>size){ minLength = size; }            
     }
         
-    cout << "Total number of sequences: " << totalNumberOfSequences << endl;
-    cout << "Average length of sequences: " << totalNumberOfBases/totalNumberOfSequences << endl;
+    cout << "Total number of sequences: " << totalNumberOfSequences <<endl;
+    cout << "Average length of sequences: " << totalNumberOfBases/totalNumberOfSequences <<endl;
     cout << "Maximal length of sequence: " << maxLength <<endl;
     cout << "Minimal length of sequence: " << minLength <<endl;
-    // std::cout << "Total bases: " << totalNumberOfBases << std::endl;
+    // cout << "Total number of bases: " << totalNumberOfBases <<endl;
 
     // N50 value
     size_t cumulativeSum = 0;
-    sort(allLengths.begin(), allLengths.end());
+    sort(allLengths.begin(), allLengths.end(), greater<size_t>());
     for (size_t currentLength : allLengths){
         cumulativeSum += currentLength;
         if (cumulativeSum >= (totalNumberOfBases/2)){
@@ -270,77 +271,45 @@ void printBasicStatisticFASTQ(string file){
             break;
         }
     }
-
-        
-    // }
 }
 
-//Longest Increasing Subsequence
-//vector<pair<unsigned int, unsigned int>> FindLIS(const vector<pair<unsigned int, unsigned int>>& matches) {
-    /*vector<unsigned int> dp, prev(matches.size());
-    vector<size_t> lis;*/
-
-    //looking for Increasing Subsequence using binary search O(nlog(n))
-    //for (size_t i = 0; i < matches.size(); ++i) {
-        //std::cerr << "dp size: " << dp.size() << ", i: " << i << "\n";
-
-        /*auto it = lower_bound(dp.begin(), dp.end(), matches[i].second,
-            [&](unsigned int a, unsigned int b) { return matches[dp[a]].second < b; });
-        */
-       /*  auto it = std::lower_bound(dp.begin(), dp.end(), i, 
-        [&](unsigned int a, unsigned int b) { return matches[a].second < matches[b].second; });
-
-        if (it == dp.end()) {
-            prev[i] = dp.empty() ? -1 : dp.back();
-            dp.push_back(i);
-        } else {
-            *it = i;
-            prev[i] = (it == dp.begin()) ? -1 : dp[it - dp.begin() - 1];
-        }
-    }
-
-    //chain reconstruction
-    vector<pair<unsigned int, unsigned int>> result;
-    for (int i = dp.empty() ? -1 : dp.back(); i >= 0; i = prev[i]) {
-        result.push_back(matches[i]);
-    }
-    reverse(result.begin(), result.end());
-    return result;
-}*/
-
+//Longest Increasing Subsequence Problem Algorithm
 vector<pair<unsigned int, unsigned int>> FindLIS(const vector<pair<unsigned int, unsigned int>>& matches) {
-    size_t n = matches.size();
+    size_t n = matches.size(); 
     if (n == 0) return {};
 
-    vector<int> lis(n, 1);    //lis[i] stores the length of the LIS ending at position i
-    vector<int> prev(n, -1); //prev[i] stores the index of the previous element in the LIS ending at i
+    vector<int> lis(n, 1);   // lis[i] stores the length of the LIS ending at position i
+    vector<int> prev(n, -1); // prev[i] stores the index of the previous element in the LIS ending at i
 
+    // matches.first - index from fragment genome, sorted ascending
+    // matches.second - index from reference genome, checking strictly increasing order on the reference positions
     for (size_t i = 1; i < n; ++i) {
         for (size_t j = 0; j < i; ++j) {
-            //check strictly increasing order on the reference positions (second)
-            //and disallow multiple fragment positions (first) from matching to the same one
-            if (matches[i].second > matches[j].second && lis[i] < lis[j] + 1 && matches[i].first != matches[j].first) {
+            // Disallow multiple fragment positions (first) from matching to the same one
+            if (matches[i].second > matches[j].second && lis[i] < lis[j] + 1 && matches[i].first != matches[j].first
+                && matches[i].first-matches[j].first<5000 && matches[i].second-matches[j].second<5000) {
                 lis[i] = lis[j] + 1;
                 prev[i] = j;
             }
         }
     }
 
-    //find the index of the maximum LIS length    
+    // Find the index of the maximum LIS length    
     int max_index = distance(lis.begin(), max_element(lis.begin(), lis.end()));
 
-    //reconstruct the LIS by backtracking through the prev array
+    // Reconstruct the LIS by backtracking through the prev array
     vector<pair<unsigned int, unsigned int>> result;
     for (int i = max_index; i >= 0; i = prev[i]) {
         result.push_back(matches[i]);
         if (prev[i] == -1) break;
     }
 
-    reverse(result.begin(), result.end()); //because we reconstructed it backwards
+    reverse(result.begin(), result.end()); // Because we reconstructed it backwards
 
     return result;
 }
 
+// Printing found LIS as (fragment_position, reference_position)
 void PrintLIS(const std::vector<std::pair<unsigned int, unsigned int>>& lis_matches) {
     std::cout << "Longest Increasing Subsequence (LIS) of matches:\n";
     for (const auto& match : lis_matches) {
@@ -356,8 +325,7 @@ int main(int argc, char* argv[]) {
     string file1, file2;
     unsigned int k = 15, w = 5;
     double f = 0.001;
-    bool output_cigar = false;
-
+    bool output_cigar = false, statistic = false;
 
     if (argc < 2) {
         std::cerr << "Error: Not enough arguments"<<endl;
@@ -385,7 +353,7 @@ int main(int argc, char* argv[]) {
             if (strcmp(argv[number], "global") == 0) { align_type_ = team::AlignmentType::global;
             } else if (strcmp(argv[number], "local") == 0) { align_type_ = team::AlignmentType::local;
             } else if (strcmp(argv[number], "semiGlobal") == 0) { align_type_ = team::AlignmentType::semiGlobal;
-            } else { std::cerr << "Error: Expected Alignment type: global, local, semiGlobal\n";
+            } else { std::cerr << "Error: Expected Alignment type: global, local, semiGlobal\n"; printHelp(); return 1;
             }
         } else if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
             match = std::atoi(argv[++i]);
@@ -401,7 +369,9 @@ int main(int argc, char* argv[]) {
             f = std::stod(argv[++i]);
         } else if (strcmp(argv[i], "-c") == 0) {
             output_cigar = true;
-        }else if (file1.empty()) {
+        } else if (strcmp(argv[i], "-s") == 0) {
+            statistic = true;
+        } else if (file1.empty()) {
             file1 = argv[i];
         } else if (file2.empty()) {
             file2 = argv[i];
@@ -412,97 +382,111 @@ int main(int argc, char* argv[]) {
         }
 
     }
+    
     if (file1.empty() || file2.empty()) {
         std::cerr << "Error: Two input files are required.\n";
         printHelp();
         return 1;
     }
 
-    // Output for debug
-    std::cout << "Files: " << file1 << ", " << file2 << "\n";
-    std::cout << "Align type: **************" 
-              << ", Match: " << match
-              << ", Mismatch: " << mismatch
-              << ", Gap: " << gap << "\n";
-    // std::cout << "Align type: " << align_type_;
-
-    cout << "Processing files: " << file1 << " and " << file2 << endl;
-
     // The first file will contain a reference genome in FASTA format
     // --------------------------------------------------------------
-    cout << "Basic statistic for reference genome"<<endl;
-    cout << "------------------------------------"<<endl;
     auto referenceParser = bioparser::Parser<SequenceFASTA>::Create<bioparser::FastaParser>(file1);
-    // parse whole file
-    auto referenceSequence = referenceParser->Parse(-1);
-    printBasicStatisticFASTA(file1);
+    auto referenceSequence = referenceParser->Parse(-1); // parse whole file
+    
+    if(statistic){
+        cout << "Basic statistic for reference genome"<<endl;
+        cout << "------------------------------------"<<endl;
+        printBasicStatisticFASTA(file1);
+    }
 
-    //map for minimizer index in the reference genome (key-minimizer hash, (position, orientation))
-    //unordered_map<unsigned int, vector<pair<unsigned int, bool>>> reference_index;
+    // Map for minimizer index in the reference genome (key-minimizer hash, (position, orientation))
     unordered_map<unsigned int, set<pair<unsigned int, bool>>> reference_index_fwd;
-    unordered_map<unsigned int, int> minimizer_frequencies_fwd;
     unordered_map<unsigned int, set<pair<unsigned int, bool>>> reference_index_rev;
-    unordered_map<unsigned int, int> minimizer_frequencies_rev;
 
     auto& reference = referenceSequence.front()->data();
     //minimizers in the reference
     KMER ref(true);
     auto minimizers_fwd =ref.Minimize(reference.c_str(), reference.length(), k, w);
-    //PrintMinimizersVector(minimizers_fwd, k);
+    unordered_map<unsigned int, int> minimizer_frequencies_fwd = ref.GetMinimizerFrequencies();
+    // PrintMinimizersVector(minimizers_fwd, k);
 
     //complement of reference
     auto& reference_rev = ReverseComplement(reference);
     //minimizers in the complement reference
     KMER ref_rev(false);
     auto minimizers_rev = ref_rev.Minimize(reference_rev.c_str(), reference_rev.length(), k, w);
-    //PrintMinimizersVector(minimizers_rev, k);
+    unordered_map<unsigned int, int> minimizer_frequencies_rev = ref_rev.GetMinimizerFrequencies();
+    // PrintMinimizersVector(minimizers_rev, k);
 
-
-    cerr << "DEBUG: Number of minimizers in ref fwd before f = " << minimizers_fwd.size() << endl;
-    cerr << "DEBUG: Number of minimizers in ref rev before f = " << minimizers_rev.size() << endl;
-
-
-    /*cout << "Minimizers for reference: " << referenceSequence.front()->name() << "\n";
-            for (const auto& [hash, pos, strand] : minimizers) {
-                cout << "  hash: " << hash
-                    << ", position: " << pos
-                    << ", strand: " << (strand ? "+" : "-") << "\n";
-            }*/
-
-
-    //how frequent is the minimizer in the reference
-    for (const auto& [hash, pos, strand] : minimizers_fwd) {
-        minimizer_frequencies_fwd[hash]++;
-    }
-    for (const auto& [hash, pos, strand] : minimizers_rev) {
-        minimizer_frequencies_rev[hash]++;
-    }
-
+    //filtering minimizers that show up too often
     int frequency_threshold = static_cast<int>(f * reference.length());
-    //filtering minimizers that show up too often
-    for (const auto& [hash, pos, strand] : minimizers_fwd) {
-        if (minimizer_frequencies_fwd[hash] <= frequency_threshold) {
-            //reference_index[hash].emplace_back(pos, strand);
-            reference_index_fwd[hash].insert({pos, strand});
-            //cerr << "hash: " << hash << " pos: " << pos << " strand: " << strand << endl;
+    for(unsigned int i=0; i<minimizers_rev.size(); i++){
+        unsigned int hash_fwd = get<0>(minimizers_fwd[i]);
+        unsigned int pos_fwd = get<1>(minimizers_fwd[i]);
+        bool strand_fwd = get<2>(minimizers_fwd[i]);
+        if (minimizer_frequencies_fwd[hash_fwd] <= frequency_threshold) {
+            reference_index_fwd[hash_fwd].insert({pos_fwd, strand_fwd});
+        }
+
+        unsigned int hash_rev = get<0>(minimizers_rev[i]);
+        unsigned int pos_rev = get<1>(minimizers_rev[i]);
+        bool strand_rev = get<2>(minimizers_rev[i]);
+        if (minimizer_frequencies_rev[hash_rev] <= frequency_threshold) {
+            reference_index_rev[hash_rev].insert({pos_rev, strand_rev});
         }
     }
 
-    //filtering minimizers that show up too often
-    for (const auto& [hash, pos, strand] : minimizers_rev) {
-        if (minimizer_frequencies_rev[hash] <= frequency_threshold) {
-            //reference_index[hash].emplace_back(pos, strand);
-            reference_index_rev[hash].insert({pos, strand});
-            //cerr << "hash: " << hash << " pos: " << pos << " strand: " << strand << endl;
-        }
-    }
+    cout<< "DEBUG: GOTOV SAM S OVIM!"<<endl;
 
+    if(statistic){
+        // Get unique minimizers and number of occurance of unique minimizers:
+        cout<<"Number of distinct minimizers for forward strand: "<<minimizer_frequencies_fwd.size()<<endl;
+        cout<<"Number of distinct minimizers for reverse complement: "<<minimizer_frequencies_rev.size()<<endl;
+
+        // Fraction of singletons
+        int count_fwd = 0;
+        for (const auto& pair : minimizer_frequencies_fwd) {
+            if (pair.second == 1) {
+                ++count_fwd;
+            }
+        }
+        int count_rev = 0;
+        for (const auto& pair : minimizer_frequencies_rev) {
+            if (pair.second == 1) {
+                ++count_rev;
+            }
+        }
+        double singleton_fraction_fwd = 1.0 * count_fwd / minimizer_frequencies_fwd.size();
+        cout<<"Fraction of singletons on forward strand: "<<singleton_fraction_fwd<<endl;
+        double singleton_fraction_rev = 1.0 * count_rev / minimizer_frequencies_rev.size();
+        cout<<"Fraction of singletons on reverse complement: "<<singleton_fraction_rev<<endl;
+
+        //  Number of occurrences of the most frequent minimizer when the top f frequent minimizers are not taken in account 
+        unsigned int best_key_fwd = 0;
+        int max_value_fwd = numeric_limits<int>::min();
+        for (const auto& pair : minimizer_frequencies_fwd) {
+            if (reference_index_fwd.find(pair.first) != reference_index_fwd.end() && pair.second > max_value_fwd) {
+                max_value_fwd = pair.second;
+                best_key_fwd = pair.first;
+            }
+        }
+        unsigned int best_key_rev = 0;
+        int max_value_rev = numeric_limits<int>::min();
+        for (const auto& pair : minimizer_frequencies_rev) {
+            if (reference_index_rev.find(pair.first) != reference_index_rev.end() && pair.second > max_value_rev) {
+                max_value_rev = pair.second;
+                best_key_rev = pair.first;
+            }
+        }
+        if(max_value_fwd!=numeric_limits<int>::min()){ cout << "Minimizer on forward strand with max value: " << MappKmerBitToStringFWD(best_key_fwd,k) << ", Value: " << max_value_fwd <<endl;
+        } else { cout << "There are no minimizeres on forward strand after removing (1-f) percent of most frequent minimizers."<<endl; }
+        if(max_value_rev!=numeric_limits<int>::min()){ cout << "Minimizer on reverse complement with max value: " << MappKmerBitToStringFWD(best_key_rev,k) << ", Value: " << max_value_rev <<endl;
+        } else { cout << "There are no minimizeres on forward strand after removing (1-f) percent of most frequent minimizers."<<endl; }
+    }
     
-
-    // while the second file will contain a set of fragments in either FASTA or FASTQ format.
-    // --------------------------------------------------------------------------------------
-    cout << endl << "Basic statistic for fragments of genome"<<endl;
-    cout << "------------------------------------"<<endl;
+    // while the second file will contain a set of fragments in either FASTA or FASTQ format -> so we need to determine format
+    // ------------------------------------------------------------------------------------------------------------------------------
     bool isFastq = true;
     bool isFasta = true;
     vector<unique_ptr<SequenceFASTA>> fragmentSequencesFASTA;
@@ -521,58 +505,42 @@ int main(int argc, char* argv[]) {
                 std::make_move_iterator(c.end()));
         }
     } catch (const std::exception& e) {
-        cerr << "Failed to parse as FASTQ: " << e.what() << endl;
+        // cerr << "Failed to parse as FASTQ: " << e.what() << endl;
         isFastq = false;
         try{
             auto fragmentParser = bioparser::Parser<SequenceFASTA>::Create<bioparser::FastaParser>(file2);
-            // parse whole file
-            fragmentSequencesFASTA = fragmentParser->Parse(-1);
+            fragmentSequencesFASTA = fragmentParser->Parse(-1); // parse whole file
         } catch (const std::exception& e) {
                 isFasta = false;
-                cerr << "Failed to parse as FASTA: " << e.what() << endl;
+                // cerr << "Failed to parse as FASTA: " << e.what() << endl;
         }
     }
-    if (isFasta == false && isFastq == false){ return 0; } // end of program
+    if (isFasta == false && isFastq == false){ cerr << "Given file is not in FASTA or FASTQ format! "<<endl; return 1; } // end of program
 
     if(isFasta){
-        cout<< "ODKOMENTIRAJ BASIC STATISTIC PO POTREBI ***********************************"<<endl;
-        // printBasicStatisticFASTA(file2);
-
-        // MINIMIZER ZA MALI PRIMJER ********************************************
-        // vector<tuple<unsigned int, unsigned int, bool>> minimizers = team::Minimize(fragmentSequencesFASTA[0]->data().c_str(), fragmentSequencesFASTA[0]->data().size(), k, w);
-        // PrintMinimizersVector(minimizers, k);
-
+        if(statistic){
+            cout << endl << "Basic statistic for fragments of genome"<<endl;
+            cout << "------------------------------------"<<endl;
+            printBasicStatisticFASTA(file2);
+        }
+        
         if (fragmentSequencesFASTA.size()<2){  std::cerr << "Need at least 2 sequences to pick two different ones.\n"; return 0;}
 
-        /*mt19937 rng(static_cast<unsigned int>(std::time(nullptr)));
-        uniform_int_distribution<> dist(0, fragmentSequencesFASTA.size() - 1);
-
-        int index1;
-        do {
-            index1 = rand() % fragmentSequencesFASTA.size();
-        } while (fragmentSequencesFASTA[index1]->data().size()>5000);
-
-        int index2;
-        do {
-            index2 = rand() % fragmentSequencesFASTA.size();
-        } while ((fragmentSequencesFASTA[index1]->data().size()>5000)
-                    || (index1==index2));
-
-        //cout << "ZA DEBUGIRANJE indexi 19438 i 6323 *************************************************"<<endl;
-        //index1 = 19438;
-        //index2 = 6323; //27
-
-
-        auto& seq1 = fragmentSequencesFASTA[index1];
-        auto& seq2 = fragmentSequencesFASTA[index2];
-
-        cout << "First random index: " << index1 << " -> " << seq1->name() << "\n";
-        cout << "Second random index: " << index2 << " -> " << seq2->name() << "\n";
-
-       
+        // Two random sequences from the second input file, with lengths not exceeding 5000 base pairs, need to be aligned and the result reported.
+        // mt19937 rng(static_cast<unsigned int>(std::time(nullptr)));
+        // uniform_int_distribution<> dist(0, fragmentSequencesFASTA.size() - 1);
+        // int index1;
+        // do { index1 = rand() % fragmentSequencesFASTA.size();
+        // } while (fragmentSequencesFASTA[index1]->data().size()>5000);
+        // int index2;
+        // do { index2 = rand() % fragmentSequencesFASTA.size();
+        // } while ((fragmentSequencesFASTA[index1]->data().size()>5000) || (index1==index2));
+        // auto& seq1 = fragmentSequencesFASTA[index1];
+        // auto& seq2 = fragmentSequencesFASTA[index2];
+        // cout << "First random index: " << index1 << " -> " << seq1->name() << "\n";
+        // cout << "Second random index: " << index2 << " -> " << seq2->name() << "\n";
         // std::string cigar;
         // unsigned int target_begin;
-        // // trebam svaku od ovih seq1 i seq2 pripasati k pravoj referenci***********************************************************************************************************+
         // int score = team::Align(
         //     seq1->data().c_str(), seq1->data().length(),
         //     seq2->data().c_str(), seq2->data().length(),
@@ -580,56 +548,37 @@ int main(int argc, char* argv[]) {
         //     match, mismatch, gap,
         //     &cigar, &target_begin
         // );
-
-        cout<<seq1->data()<<endl;
-        // for(int i=0; i<target_begin;i++){cout<<" ";}
-        cout<<seq2->data()<<endl;
-        cout<<cigar<<endl;
-        cout<<score<<endl;*/
-
-        cerr << "DEBUG: Number of fragment sequences = " << fragmentSequencesFASTA.size() << endl;
-        cerr << "DEBUG: Reference length = " << reference.length() << endl;
-        cerr << "DEBUG: Reference index fwd size = " << reference_index_fwd.size() << endl;
-        cerr << "DEBUG: Reference index rev size = " << reference_index_rev.size() << endl;
-
-        //PrintReferenceIndex(reference_index_fwd);
-
-
-
+        // cout<<seq1->name()<<endl;
+        // cout<<seq2->name()<<endl;
+        // cout<<cigar<<endl;
+        // cout<<score<<endl;
 
         for (const auto& seq : fragmentSequencesFASTA) {
-            cout << "pocinje" << endl;
+            cout << "DEBUG: pocinje" << endl;
+
             //minimizers in the seq fragment - returns vector tuple(hash, position, strand)
             KMER frag(true);
+            if(!statistic){ frag.SetFrequenciesCount(false);}
+            else{ frag.SetFrequenciesCount(true);}
             auto raw_frag_min = frag.Minimize(seq->data().c_str(), seq->data().length(), k, w);
             auto frag_min = remove_duplicates(raw_frag_min);
 
-            //PrintMinimizersVector(frag_min, k);
-
-            /*cout << "Minimizers for fragment: " << seq->name() << "\n";
-            for (const auto& [hash, pos, strand] : frag_min) {
-                cout << "  hash: " << hash
-                    << ", position: " << pos
-                    << ", strand: " << (strand ? "+" : "-") << "\n";
-            }*/
-
-            cerr << "DEBUG: Number of minimizers in fragment = " << frag_min.size() << endl;
-            cerr << "DEBUG: Number of minimizers in reference fwd = " << reference_index_fwd.size() << endl;
-            cerr << "DEBUG: Number of minimizers in reference rev = " << reference_index_rev.size() << endl;
-
-
-            //vector<pair<unsigned int, unsigned int>> matches;
-            //finding matches in the reference genome for the minimizers in frag_min
-
-            //*****************************************************************MATCHES KAD SE SALJU SAMO MANJI MINIMIZERI */
-            /*for (const auto& [hash, f_pos, f_strand] : frag_min) {
-                if (reference_index.count(hash)) {
-                    for (const auto& [r_pos, r_strand] : reference_index[hash]) {
-                        //saving (position in the fragnment, position in the reference)
-                        matches.emplace_back(f_pos, r_pos);
+            if(statistic){
+                // Get unique minimizers and number of occurance of unique minimizers:
+                auto minimizer_frequencies_fwd = frag.GetMinimizerFrequencies();
+                cout<<"Number of distinct minimizers for forward strand: "<<minimizer_frequencies_fwd.size()<<endl;
+            
+                // Fraction of singletons
+                int count_fwd = 0;
+                for (const auto& pair : minimizer_frequencies_fwd) {
+                    if (pair.second == 1) {
+                        ++count_fwd;
                     }
                 }
-            }*/
+                double singleton_fraction_fwd = 1.0 * count_fwd / minimizer_frequencies_fwd.size();
+                cout<<"Fraction of singletons on forward strand: "<<singleton_fraction_fwd<<endl;
+            }
+
 
             vector<pair<unsigned int, unsigned int>> matches_fwd;
             vector<pair<unsigned int, unsigned int>> matches_rev;
@@ -652,8 +601,8 @@ int main(int argc, char* argv[]) {
 
 
 
-            cerr << "DEBUG: Number of matches fwd found = " << matches_fwd.size() << endl;
-            cerr << "DEBUG: Number of matches rev found = " << matches_rev.size() << endl;
+            // cerr << "DEBUG: Number of matches fwd found = " << matches_fwd.size() << endl;
+            // cerr << "DEBUG: Number of matches rev found = " << matches_rev.size() << endl;
 
 
             //Longest Increasing Subsequence
@@ -684,26 +633,26 @@ int main(int argc, char* argv[]) {
 
             //cerr << "DEBUG: " << q_begin << q_end << t_begin << t_end << endl;
 
-            // Ograniči q_end i t_end ako prelaze duljinu sekvence
-            if (q_end > seq->data().size()) {
-                cerr << "DEBUG: q_end prevelik (" << q_end << "), postavljam na " << seq->data().size() << endl;
-                q_end = seq->data().size();
-            }
-            if (t_end > reference.size()) {
-                cerr << "DEBUG: t_end prevelik (" << t_end << "), postavljam na " << reference.size() << endl;
-                t_end = reference.size();
-            }
+            // // Ograniči q_end i t_end ako prelaze duljinu sekvence
+            // if (q_end > seq->data().size()) {
+            //     cerr << "DEBUG: q_end prevelik (" << q_end << "), postavljam na " << seq->data().size() << endl;
+            //     q_end = seq->data().size();
+            // }
+            // if (t_end > reference.size()) {
+            //     cerr << "DEBUG: t_end prevelik (" << t_end << "), postavljam na " << reference.size() << endl;
+            //     t_end = reference.size();
+            // }
 
-            if (q_end > seq->data().size()) q_end = seq->data().size();
-            if (t_end > reference.size()) t_end = reference.size();
+            // if (q_end > seq->data().size()) q_end = seq->data().size();
+            // if (t_end > reference.size()) t_end = reference.size();
 
-            if (q_end <= q_begin || t_end <= t_begin) {
-                cerr << "ERROR: Invalid range for alignment" << endl;
-                continue;
-            }
+            // if (q_end <= q_begin || t_end <= t_begin) {
+            //     cerr << "ERROR: Invalid range for alignment" << endl;
+            //     continue;
+            // }
 
-            cerr << "DEBUG: q_begin = " << q_begin << ", q_end = " << q_end
-                << ", t_begin = " << t_begin << ", t_end = " << t_end << endl;
+            // cerr << "DEBUG: q_begin = " << q_begin << ", q_end = " << q_end
+            //     << ", t_begin = " << t_begin << ", t_end = " << t_end << endl;
 
 
             string cigar;
@@ -732,10 +681,10 @@ int main(int argc, char* argv[]) {
                     continue;
                 }
 
-            cerr << "DEBUG: Alignment score = " << score << ", ref_offset = " << ref_offset << endl;
+            // cerr << "DEBUG: Alignment score = " << score << ", ref_offset = " << ref_offset << endl;
 
 
-            cerr << "DEBUG: Reached output stage" << endl;
+            // cerr << "DEBUG: Reached output stage" << endl;
             cout << seq->name() << "\t" << seq->data().size() << "\t" << q_begin << "\t" << (q_end + 1)
                 << "\t+\t" << referenceSequence.front()->name() << "\t" << reference.length()
                 << "\t" << t_begin << "\t" << (t_end + 1) << "\t" << score << "\t" << (q_end - q_begin + 1)
@@ -743,70 +692,20 @@ int main(int argc, char* argv[]) {
             if (output_cigar) {
                 cout << "\tcg:Z:" << cigar;
             }
-            cerr << "\nDEBUG: Output completed" << endl;
+            // cerr << "\nDEBUG: Output completed" << endl;
             cout << endl;
         }
 
-        /* 
-        // Get unique minimizers and Number of occurance of unique minimizers:
-        // std::set<std::tuple<unsigned int, unsigned int, bool>> unique_minimizers;
-        unordered_map<unsigned int, size_t> minimizer_counts;
-        cout<<"Iteration through second file!"<<endl;
-        cout<<"FASTA SIZE: "<<fragmentSequencesFASTA.size()<<endl;
-        std::vector<std::vector<std::tuple<unsigned int, unsigned int, bool>>> all_minimizers;
-        for (size_t i = 0; i < fragmentSequencesFASTA.size(); ++i) {
-            // cout<<"i: "<<i<<endl;
-            const char* sequence = fragmentSequencesFASTA[i]->data().c_str();
-            size_t length = fragmentSequencesFASTA[i]->data().size();
-            
-            auto minimizers = team::Minimize(sequence, length, k, w);
-            all_minimizers.push_back(minimizers);
-
-            // Count and append unique minimizers
-            for (const auto& minimizer : minimizers) {
-                unsigned int mapp = get<0>(minimizer);
-                minimizer_counts[mapp]++;
-            }
-            PrintMinimizersVector(minimizers, k);
-            cout<<endl;
-            cout<<endl;
-            
-        }
-
-        size_t num_distinct = minimizer_counts.size();
-        cout<<"Number of distinct minimizers: "<<num_distinct<<endl;
-
-        // Fraction of singletons
-        size_t num_singletons = count_if(
-            minimizer_counts.begin(), minimizer_counts.end(),
-            [](const pair<const unsigned int, size_t>& entry) {
-                return entry.second == 1;
-            }
-        );
-        double singleton_fraction = 1.0 * num_singletons / num_distinct;
-        cout<<"Fraction of singletons: "<<singleton_fraction<<endl;
-
-        // Most frequent minimizer (excluding top f)
-        priority_queue<pair<size_t, unsigned int>> frequencies;
-        for (const auto& kv : minimizer_counts) {
-            frequencies.emplace(kv.second, kv.first);  
-        }
-
-        // Poping the top `f` frequent minimizers
-        for (int i = 0; i < f*frequencies.size() && !frequencies.empty(); ++i) {
-            frequencies.pop();
-        }
-
-        if (!frequencies.empty()) {
-            size_t freq = frequencies.top().first;
-            cout << "Most frequent minimizer (excluding top " << f << "): count = " << freq << endl;
-        } else {
-            cout << "Not enough minimizers to exclude top " << f << "!" << endl;
-        }*/
+        
     }
 
     if(isFastq){
-        printBasicStatisticFASTQ(file2);
+        if(statistic){
+            cout << endl << "Basic statistic for fragments of genome"<<endl;
+            cout << "------------------------------------"<<endl;
+            printBasicStatisticFASTQ(file2);
+        }
+        
         for (const auto& seq : fragmentSequencesFASTQ) {
             KMER frag(true);
             auto raw_frag_min = frag.Minimize(seq->sequence().c_str(), seq->sequence().length(), k, w);
