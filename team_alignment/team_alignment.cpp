@@ -8,7 +8,7 @@
 #define DELETE 2/* symbol for delete */
 
 
-
+// Anamarija Kic
 namespace team {
     typedef struct {
         int cost; /* cost of reaching this cell */
@@ -52,7 +52,6 @@ namespace team {
                 int gap,
                 std::string* cigar,
                 unsigned int* target_begin){
-        std::cout<<"DEBUG: Align poceo" << "\n";
         int initialization;
         std::string query_str(query, query_len);
         std::string target_str(target, target_len);
@@ -70,9 +69,6 @@ namespace team {
             default:
                 return -11111111; // RAZMISLITI KAJ STAVITI ZA DEFAULT ******************************************
         }
-
-        std::cout<<"DEBUG: Određen tip poravnanja" << "\n";
-
 
         // Matrix initialization
         std::vector<std::vector<cell>> m(query_len + 1, std::vector<cell>(target_len + 1)); /* dynamic programming table */
@@ -93,8 +89,6 @@ namespace team {
             m[0][j].parent = INSERT;           // typically INSERT to move left **********************************************************************
         }
 
-        std::cout<<"DEBUG: Inicijaliziran prvi red i prvi stupac" << "\n";
-
         std::string result;
         int max_cost=std::numeric_limits<int>::min();
         int global_i = query_len;
@@ -102,7 +96,6 @@ namespace team {
         int local_i=0, local_j=0; // ************************************************* DEFAULT ?
         switch (type) {
             case AlignmentType::global:
-                std::cout<<"DEBUG: global" << "\n";
                 for (i=1; i<=query_len; i++){
                     for (j=1; j<=target_len; j++) {
                         // if (i<5 && j<5){std::cout<<query_str[i-1]<< " "<<target_str[i-1]<<std::endl;}
@@ -165,11 +158,10 @@ namespace team {
                     // *cigar = compressed;
                 }
                 
-                printAlignmentMatrix(query, query_len, target, target_len, m);
+                //printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                 break;
             case AlignmentType::local:  
-                std::cout<<"DEBUG: local" << "\n";  
                 for (i=1; i<=query_len; i++){
                     for (j=1; j<=target_len; j++) {
                         opt[MATCH] = m[i-1][j-1].cost + match_func(query_str[i-1],target_str[j-1],match,mismatch);
@@ -194,8 +186,6 @@ namespace team {
                     }   
                 }      
 
-                std::cout<<"DEBUG: Proso prvu for petlju" << "\n";
-
                 if(cigar!=nullptr){
                     while (m[local_i][local_j].cost > 0) {
                     int dir = m[local_i][local_j].parent;
@@ -213,27 +203,22 @@ namespace team {
                     }
                 }
 
-                std::cout<<"DEBUG: Prosao while" << "\n";
-
                 std::reverse(result.begin(), result.end());
                 //if(cigar != nullptr){
                     *cigar = result;
                 }
-
-                std::cout<<"DEBUG: Prosao reverse" << "\n";
 
                 // Now (si+1, sj+1) is the starting position of the local alignment
                 if (target_begin != nullptr) {
                     *target_begin = local_j + 1; // ************************KAJ JE OV TOČNO********************************************************+
                 }
 
-                printAlignmentMatrix(query, query_len, target, target_len, m);
+                //printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                             
                 break;
             
             case AlignmentType::semiGlobal:
-                std::cout<<"DEBUG: demiGlobal" << "\n";
                 for (i=1; i<=query_len; i++){
                     for (j=1; j<=target_len; j++) {
                         opt[MATCH] = m[i-1][j-1].cost + match_func(query_str[i-1],target_str[j-1],match,mismatch);
@@ -291,7 +276,7 @@ namespace team {
                     
                 }
                 
-                printAlignmentMatrix(query, query_len, target, target_len, m);
+                //printAlignmentMatrix(query, query_len, target, target_len, m);
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                 break;
             
