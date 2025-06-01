@@ -7,6 +7,7 @@
 #include <queue>
 #include <bitset>
 #include <tuple>
+#include <set>
 
 using namespace std;
 
@@ -15,9 +16,23 @@ namespace team {
     // class KMER{
         // private:
             bool is_fwd = true;
+            bool frequencies = true;
+            unordered_map<unsigned int, int> minimizer_frequencies;
+            set<tuple<unsigned int, unsigned int, bool>> unique_minmizers;
+
         // public:
             // Constructor for class
             KMER::KMER(bool is_fwd_) : is_fwd(is_fwd_){}
+
+            // Return unique minimizers
+            set<tuple<unsigned int, unsigned int, bool>> KMER::GetUniqueMinimizers(){
+                return unique_minmizers;
+            }
+
+            // Return frequencies of minimizers
+            unordered_map<unsigned int, int> KMER::GetMinimizerFrequencies(){
+                return minimizer_frequencies;
+            }
 
             // Mapping from bit shifted values to string
             string KMER::MappKmerBitToString(unsigned int kmer, unsigned int kmer_len){
@@ -49,12 +64,20 @@ namespace team {
             unsigned int KMER::MappSeqCharPointerToBit(const char* seq, unsigned int kmer_len){
                 unsigned int mapp = 0;
                 // Value mapping for positions (original order)
-                unordered_map<char, unsigned int> base_value = {
-                    {'C', 0},
-                    {'A', 1},
-                    {'T', 2},
-                    {'G', 3}
+                // unordered_map<char, unsigned int> base_value = {
+                //     {'C', 0},
+                //     {'A', 1},
+                //     {'T', 2},
+                //     {'G', 3}
+                // };
+
+                 unordered_map<char, unsigned int> base_value = {
+                    {'C', 1},
+                    {'A', 0},
+                    {'T', 3},
+                    {'G', 2}
                 };
+
 
                 for (int i=0; i<kmer_len; i++){
                     mapp<<=2;
@@ -122,30 +145,48 @@ namespace team {
                     // deque<tuple<unsigned int, unsigned int, bool>> end_window_rev;
 
                     for (unsigned int i = 0; i <= u-kmer_len; i++){
-                            unsigned int mapp_bit;
-                            if(is_fwd){ mapp_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
-                            } else{     mapp_bit = MappSeqCharPointerToBit(sequence+sequence_len-kmer_len-i, kmer_len);
-                            }
+                            
+                            unsigned int mapp_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
+
+                            // unsigned int mapp_bit;
+                            // if(is_fwd){ mapp_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
+                            // } else{     mapp_bit = MappSeqCharPointerToBit(sequence+sequence_len-kmer_len-i, kmer_len);
+                            // }
                             end_window.push_back(make_tuple(mapp_bit, i+1, is_fwd));
                         
                         }
-                        minimizers.push_back(GetTupleWithMinFirst(end_window));
-                   
+
+                        auto& best = GetTupleWithMinFirst(end_window);
+                        minimizers.push_back(best);
+                        unique_minmizers.insert(best);
+
+                        if(frequencies){
+                            unsigned int first_value = get<0>(best); 
+                            minimizer_frequencies[first_value]++;
+                        }
                 }
 
                 // NORMAL WINDOWS - najbolje za sad
                 for (unsigned int i = 0; i <= sequence_len-kmer_len; i++){
                     if(i>=window_len){ window.pop_front();}
 
-                    unsigned int mapp_bit;
-                    if(is_fwd){ mapp_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
-                    } else{     mapp_bit = MappSeqCharPointerToBit(sequence+sequence_len-kmer_len-i, kmer_len);
-                    }
+                    unsigned int mapp_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
+                    // unsigned int mapp_bit;
+                    // if(is_fwd){ mapp_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
+                    // } else{     mapp_bit = MappSeqCharPointerToBit(sequence+sequence_len-kmer_len-i, kmer_len);
+                    // }
                     
                     window.push_back(make_tuple(mapp_bit, i+1, is_fwd));
 
                     if(i>=(window_len-1)){
-                        minimizers.push_back(GetTupleWithMinFirst(window));
+                        auto& best = GetTupleWithMinFirst(window);
+                        minimizers.push_back(best);
+                        unique_minmizers.insert(best);
+
+                        if(frequencies){
+                            unsigned int first_value = get<0>(best); 
+                            minimizer_frequencies[first_value]++;
+                        }
                     }
                 }
 
@@ -157,14 +198,24 @@ namespace team {
                     unsigned int start = sequence_len - u;
 
                     for (unsigned int i = start; i <= sequence_len - kmer_len; ++i){
-                        unsigned int mapp_bit;
-                        if(is_fwd){ mapp_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
-                        } else{     mapp_bit = MappSeqCharPointerToBit(sequence+sequence_len-kmer_len-i, kmer_len);
-                        }
+
+                        unsigned int mapp_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
+
+                        // unsigned int mapp_bit;
+                        // if(is_fwd){ mapp_bit = MappSeqCharPointerToBit(sequence+i, kmer_len);
+                        // } else{     mapp_bit = MappSeqCharPointerToBit(sequence+sequence_len-kmer_len-i, kmer_len);
+                        // }
 
                             end_window.push_back(make_tuple(mapp_bit, i+1, is_fwd)); 
                     }
-                    minimizers.push_back(GetTupleWithMinFirst(end_window));
+                    auto& best = GetTupleWithMinFirst(window);
+                    minimizers.push_back(best);
+                    unique_minmizers.insert(best);
+
+                    if(frequencies){
+                        unsigned int first_value = get<0>(best); 
+                        minimizer_frequencies[first_value]++;
+                    }
                 }
                 return minimizers;
 
