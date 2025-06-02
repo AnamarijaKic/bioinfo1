@@ -3,6 +3,7 @@
 
 #include <string>
 
+// Anamarija Kic
 namespace team {
     enum class AlignmentType {
         global, // == NeedlemanWunsch,
