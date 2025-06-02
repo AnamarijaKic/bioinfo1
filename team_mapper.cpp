@@ -476,7 +476,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    cout<< "DEBUG: GOTOV SAM S OVIM!"<<endl;
 
     // Anamarija Kic
     if(statistic){
