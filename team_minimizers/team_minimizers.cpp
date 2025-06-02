@@ -11,6 +11,7 @@
 
 using namespace std;
 
+// Anamarija Kic
 namespace team {
 
     // class KMER{
@@ -76,14 +77,6 @@ namespace team {
                     {'G', 3}
                 };
 
-                //  unordered_map<char, unsigned int> base_value = {
-                //     {'C', 1},
-                //     {'A', 0},
-                //     {'T', 3},
-                //     {'G', 2}
-                // };
-
-
                 for (int i=0; i<kmer_len; i++){
                     mapp<<=2;
                     mapp |= base_value[seq[i]];
@@ -94,10 +87,10 @@ namespace team {
 
             // Reverse complement of a DNA string
             string KMER::ReverseComplement(const string& kmer) { 
-                // ako imamo bazu ACG reverse complement nastane kao ACG -> GCA -> CGT!!
-                // 1. reversamo sekvencu
+                // if we have base ACG reverse complement is made in this way => ACG -> GCA -> CGT!!
+                // 1. reversing the sequence
                 string rc(kmer.rbegin(), kmer.rend());
-                // 2. komplementiramo sekvencu
+                // 2. complement sequence
                 for (char& c : rc) {
                     switch (c) {
                         case 'A': c = 'T'; break;
@@ -176,7 +169,7 @@ namespace team {
                         }
                 }
 
-                // NORMAL WINDOWS - najbolje za sad
+                // NORMAL WINDOWS
                 for (unsigned int i = 0; i <= sequence_len-kmer_len; i++){
                     if(i>=window_len){ window.pop_front();}
 
@@ -200,7 +193,7 @@ namespace team {
                     }
                 }
 
-                // KRAJ -> end-minimizer:
+                // END -> end-minimizer:
                 for(unsigned int u=kmer_len; u<(window_len+kmer_len-1);u++){
                     if (sequence_len < u) break;
                     deque<tuple<unsigned int, unsigned int, bool>> end_window;
@@ -233,127 +226,3 @@ namespace team {
 
     // };
 }
-
-// FUCTIONS THAT ARE NO LONGER NEEDED:
-
-// unsigned int MappKmerStringToBit(const string& kmer){ // Mapping function for a k-mer
-//         unsigned int mapp = 0;
-//         // Value mapping for positions (original order)
-//         unordered_map<char, unsigned int> base_value = {
-//             {'C', 0},
-//             {'A', 1},
-//             {'T', 2},
-//             {'G', 3}
-//         };
-//         for (int i=0; i<kmer.size(); i++){
-//             mapp<<=2;
-//             mapp |= base_value[kmer[i]];
-//         }
-//         return mapp;
-//     }
-
-// unsigned int ReverseComplementSeqCharPointerToBit(const char* seq, unsigned int seq_len) {  // Reverse complement of a DNA string
-//         unsigned int rc = 0;
-//         // Value mapping for positions (original order)
-//         unordered_map<char, unsigned int> base_value = {
-//             {'C', 3},
-//             {'A', 2},
-//             {'T', 1},
-//             {'G', 0}
-//         };
-//         for (unsigned int i=seq_len-1; i>0; i--){
-//             rc<<=2;
-//             rc |= base_value[seq[i]];
-//             if(i==1){
-//                 rc<<=2;
-//                 rc |= base_value[seq[i-1]];
-//             }
-//         }
-//         return rc;
-//     }
-
-// string MappKmerStringToString(const string& kmer){ // Mapping function for a k-mer - String
-//         string mapp = "";
-//         // Value mapping for positions (original order)
-//         unordered_map<char, unsigned int> base_value = {
-//             {'C', '0'},
-//             {'A', '1'},
-//             {'T', '2'},
-//             {'G', '3'}
-//         };
-//         for (int i=0; i<kmer.size(); i++){
-//             unsigned int val;
-//             val = base_value[kmer[i]];
-//             mapp += val;
-//         }
-//         return mapp;
-//     }
-
-// unsigned int ExtractKmer(unsigned int packed_seq, int i, int k) { // Find kmer inside of number that holds whole sequence, with 2 bits for each sequence
-//         unsigned int shift = 2 * i; 
-//         unsigned int mask = (1ULL << (2 * k)) - 1; // k*2 bits set to 1
-//         return (packed_seq >> shift) & mask;
-//     }
-// unsigned int ExtractKmerWithMask(unsigned int packed_seq, int i, unsigned int mask) {
-//         unsigned int shift = 2 * i; 
-//         return (packed_seq >> shift) & mask;
-//     }
-
-
-
-
-
-// KORISNI PRINTOVI I KODOVI
-
-// cout<<"unsigned int value rc: "<<mapp_seq_rev_bit_2<<endl;
-// cout<<"tocna unsigned int value rc: "<<mapp_seq_rev_bit<<endl;
-// cout<<"STRING SEKVENCE: "<<endl;
-// cout<<"Seq: "<<sequence_str<<endl;
-// cout<<"Rc_seq: "<<rc_sequence_str<<endl;
-// cout<<"BIT SEKVENCE: "<<endl;
-// cout<<"prva: "<<endl;
-// cout<<mapp_seq_fwd_bit<<endl;
-// cout<<MappKmerBitToString(mapp_seq_fwd_bit, sequence_len)<<endl;
-// cout<<"prva NOVI POSTUPAK: "<<endl;
-// cout<<mapp_seq_fwd_bit_2<<endl;
-// cout<<MappKmerBitToString(mapp_seq_fwd_bit_2, sequence_len)<<endl;
-// cout<<"druga: "<<endl;
-// cout<<mapp_seq_rev_bit<<endl;
-// cout<<MappKmerBitToString(mapp_seq_rev_bit, sequence_len)<<endl;
-// cout<<"druga NOVI POSTUPAK"<<endl;
-// cout<<mapp_seq_rev_bit_2<<endl;
-// cout<<MappKmerBitToString(mapp_seq_rev_bit_2, sequence_len)<<endl;
-
-
-// cout<<kmer<<std::endl;
-// cout<<mapp_fwd<<std::endl;
-// cout<<rc_kmer<<std::endl;
-// cout<<mapp_rev<<std::endl;
-// cout<<endl;
-
-// unsigned int mapp_fwd = MappKmer(kmer);
-// unsigned int mapp_rev = MappKmer(rc_seq_kmer);
-// cout<<"INTEGERI: "<<endl;
-// cout<<mapp_fwd<<endl;
-// cout<<mapp_rev<<endl;
-
-// cout<<"STRINGOVI: "<<endl;
-// string mapp_fwd_str(mapp_seq_fwd_str_ptr+i, kmer_len);
-// string mapp_rev_str(mapp_seq_rev_str_ptr+sequence_len-kmer_len-i, kmer_len);
-// cout<<mapp_fwd_str<<endl;
-// cout<<mapp_rev_str<<endl;
-
-// string kmer(sequence + i, kmer_len); // std::string(const char* s, size_t n);
-// string rc_kmer = ReverseComplement(kmer);
-
-// cout<<"STRINGOVI: "<<endl;
-// string mapp_fwd_str(mapp_seq_fwd_str_ptr+i, kmer_len);
-// string mapp_rev_str(mapp_seq_rev_str_ptr+sequence_len-kmer_len-i, kmer_len);
-// cout<<mapp_fwd_str<<endl;
-// cout<<mapp_rev_str<<endl;
-
-// auto& za_ispis = GetTupleWithMinFirst(end_window);
-// cout<<"MINIMIZERI: "<<endl;
-// unsigned int first_value = get<0>(za_ispis); 
-// cout<<MappKmerBitToString(first_value,kmer_len)<<endl;
-// cout<<MappKmerStringToString(MappKmerBitToString(first_value,kmer_len))<<endl;

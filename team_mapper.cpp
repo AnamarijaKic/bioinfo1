@@ -23,6 +23,7 @@
 using namespace std;
 using namespace team;
 
+// Marta Kekić
 // Removes duplicates from vector of minimizers
 std::vector<std::tuple<unsigned int, unsigned int, bool>> remove_duplicates(
     const std::vector<std::tuple<unsigned int, unsigned int, bool>>& input) {
@@ -43,6 +44,7 @@ std::vector<std::tuple<unsigned int, unsigned int, bool>> remove_duplicates(
     return result;
 }
 
+// Anamarija Kic
 // Reverse complement of a DNA string
     string ReverseComplement(const string& kmer) { 
         //ACG -> GCA -> CGT!!
@@ -85,6 +87,7 @@ string MappKmerBitToStringFWD(unsigned int kmer, unsigned int kmer_len){
     return mapp;
 }
 
+// Marta Kekić
 // Printing out minimizers from reference genome
 void PrintReferenceIndex(const std::unordered_map<unsigned int, std::set<std::pair<unsigned int, bool>>>& reference_index, unsigned int kmer_len) {
     for (const auto& [minimizer_hash, positions_set] : reference_index) {
@@ -96,6 +99,7 @@ void PrintReferenceIndex(const std::unordered_map<unsigned int, std::set<std::pa
     }
 }
 
+// Anamarija Kic
 // Printing minimizers from KMER.Minimize function
 void PrintMinimizersVector(const vector<tuple<unsigned int, unsigned int, bool>>& minimizers, unsigned int k) {
     for (const auto& t : minimizers) {
@@ -220,6 +224,7 @@ void printBasicStatisticFASTA(string file){
     }
 }
 
+// Marta Kekić
 // Printing basic statistic for FASTQ file
 void printBasicStatisticFASTQ(string file){
     auto p = bioparser::Parser<SequenceFASTQ>::Create<bioparser::FastqParser>(file);
@@ -328,6 +333,7 @@ int main(int argc, char* argv[]) {
     double f = 0.001;
     bool output_cigar = false, statistic = false;
 
+    //Anamarija Kic
     if (argc < 2) {
         std::cerr << "Error: Not enough arguments"<<endl;
         printHelp();
@@ -401,6 +407,7 @@ int main(int argc, char* argv[]) {
         printBasicStatisticFASTA(file1);
     }
 
+    // Marta Kekić
     // Map for minimizer index in the reference genome (key-minimizer hash, (position, orientation))
     unordered_map<unsigned int, set<pair<unsigned int, bool>>> reference_index_fwd;
     unordered_map<unsigned int, set<pair<unsigned int, bool>>> reference_index_rev;
@@ -423,25 +430,55 @@ int main(int argc, char* argv[]) {
     // PrintMinimizersVector(minimizers_rev, k);
 
     //filtering minimizers that show up too often
-    int frequency_threshold = static_cast<int>(f * reference.length());
-    for(unsigned int i=0; i<minimizers_rev.size(); i++){
-        unsigned int hash_fwd = get<0>(minimizers_fwd[i]);
-        unsigned int pos_fwd = get<1>(minimizers_fwd[i]);
-        bool strand_fwd = get<2>(minimizers_fwd[i]);
-        if (minimizer_frequencies_fwd[hash_fwd] <= frequency_threshold) {
+    int frequency_threshold_fwd = static_cast<int>(f * ref.GetUniqueMinimizers().size());
+    int frequency_threshold_rev = static_cast<int>(f * ref_rev.GetUniqueMinimizers().size());
+
+    // creating a vector intead of a map sto that we can sort it
+    std::vector<std::pair<unsigned int, int>> freq_vec_fwd(minimizer_frequencies_fwd.begin(), minimizer_frequencies_fwd.end());
+    std::vector<std::pair<unsigned int, int>> freq_vec_rev(minimizer_frequencies_rev.begin(), minimizer_frequencies_rev.end());
+
+    // sorting minimizers by frequency
+    std::sort(freq_vec_fwd.begin(), freq_vec_fwd.end(),
+        [](const auto& a, const auto& b) {
+            return a.second > b.second; // descending
+        });
+
+    // banned_hashes_fwd => frequency_threshold_fwd most common minimizers
+    unordered_set<unsigned int> banned_hashes_fwd;
+    for (int i = 0; i < std::min(frequency_threshold_fwd, static_cast<int>(freq_vec_fwd.size())); ++i) {
+        banned_hashes_fwd.insert(freq_vec_fwd[i].first);
+    }
+
+    // reference_index_fwd => only minimizers not in banned_hashes_fwd
+    for (const auto& [hash_fwd, pos_fwd, strand_fwd] : minimizers_fwd) {
+        if (!banned_hashes_fwd.count(hash_fwd)) {
             reference_index_fwd[hash_fwd].insert({pos_fwd, strand_fwd});
         }
+    }
 
-        unsigned int hash_rev = get<0>(minimizers_rev[i]);
-        unsigned int pos_rev = get<1>(minimizers_rev[i]);
-        bool strand_rev = get<2>(minimizers_rev[i]);
-        if (minimizer_frequencies_rev[hash_rev] <= frequency_threshold) {
+    // for reverse complement
+    // sorting minimizers by frequency
+    std::sort(freq_vec_rev.begin(), freq_vec_rev.end(),
+        [](const auto& a, const auto& b) {
+            return a.second > b.second; // descending
+        });
+
+    // banned_hashes_rev => frequency_threshold_rev most common minimizers
+    unordered_set<unsigned int> banned_hashes_rev;
+    for (int i = 0; i < std::min(frequency_threshold_rev, static_cast<int>(freq_vec_rev.size())); ++i) {
+        banned_hashes_rev.insert(freq_vec_fwd[i].first);
+    }
+
+    // reference_index_rev => only minimizers not in banned_hashes_rev
+    for (const auto& [hash_rev, pos_rev, strand_rev] : minimizers_rev) {
+        if (!banned_hashes_rev.count(hash_rev)) {
             reference_index_rev[hash_rev].insert({pos_rev, strand_rev});
         }
     }
 
     cout<< "DEBUG: GOTOV SAM S OVIM!"<<endl;
 
+    // Anamarija Kic
     if(statistic){
         // Get unique minimizers and number of occurance of unique minimizers:
         cout<<"Number of distinct minimizers for forward strand: "<<minimizer_frequencies_fwd.size()<<endl;
@@ -556,17 +593,21 @@ int main(int argc, char* argv[]) {
         // cout<<cigar<<endl;
         // cout<<score<<endl;
 
+        // Marta Kekić
         #pragma omp parallel for schedule(dynamic)
         for (int i = 0; i < fragmentSequencesFASTA.size(); ++i) {
             auto& seq = fragmentSequencesFASTA[i];
             KMER frag(true);
+            //Anamarija Kic
             if(!statistic){ frag.SetFrequenciesCount(false);}
             else{ frag.SetFrequenciesCount(true);}
 
+            // Marta Kekić
             //minimizers in the seq fragment - returns vector tuple(hash, position, strand)
             auto raw_frag_min = frag.Minimize(seq->data().c_str(), seq->data().length(), k, w);
             auto frag_min = remove_duplicates(raw_frag_min);
 
+            // Anamarija Kic
             if(statistic){
                 // Get unique minimizers and number of occurance of unique minimizers:
                 auto minimizer_frequencies_fwd = frag.GetMinimizerFrequencies();
@@ -583,6 +624,7 @@ int main(int argc, char* argv[]) {
                 cout<<"Fraction of singletons on forward strand: "<<singleton_fraction_fwd<<endl;
             }
 
+            // Marta Kekić
             vector<pair<unsigned int, unsigned int>> matches_fwd;
             vector<pair<unsigned int, unsigned int>> matches_rev;
             for (const auto& [hash, f_pos, f_strand] : frag_min) {
@@ -618,23 +660,6 @@ int main(int argc, char* argv[]) {
             unsigned int ref_offset;
             int score;
             string strand;
-
-            if(chain == chain_fwd){
-                    strand = "+";
-                    score = team::Align(
-                        seq->data().c_str() + q_begin, q_end - q_begin + 1,
-                        reference.c_str() + t_begin, t_end - t_begin + 1,
-                        align_type_, match, mismatch, gap,
-                        output_cigar ? &cigar : nullptr, &ref_offset);
-                }
-            else{
-                    strand = "-";
-                    score = team::Align(
-                        seq->data().c_str() + q_begin, q_end - q_begin + 1,
-                        reference_rev.c_str() + t_begin, t_end - t_begin + 1,
-                        align_type_, match, mismatch, gap,
-                        output_cigar ? &cigar : nullptr, &ref_offset);
-            }
 
             try{ 
                 if(chain == chain_fwd){
@@ -722,18 +747,41 @@ int main(int argc, char* argv[]) {
 
             string cigar;
             unsigned int ref_offset;
+            int score;
+            string strand;
 
-            int score = team::Align(
-                seq->sequence().c_str() + q_begin, q_end - q_begin,
-                reference.c_str() + t_begin, t_end - t_begin,
-                align_type_, match, mismatch, gap,
-                output_cigar ? &cigar : nullptr, &ref_offset);
+            try{ 
+                if(chain == chain_fwd){
+                    strand = "+";
+                    score = team::Align(
+                        seq->sequence().c_str() + q_begin, q_end - q_begin + 1,
+                        reference.c_str() + t_begin, t_end - t_begin + 1,
+                        align_type_, match, mismatch, gap,
+                        output_cigar ? &cigar : nullptr, &ref_offset);
+                }
+                else{
+                    strand = "-";
+                    score = team::Align(
+                        seq->sequence().c_str() + q_begin, q_end - q_begin + 1,
+                        reference_rev.c_str() + t_begin, t_end - t_begin + 1,
+                        align_type_, match, mismatch, gap,
+                        output_cigar ? &cigar : nullptr, &ref_offset);
+                }
+                
+                
+                } catch (const std::exception& e) {
+                    cerr << "ERROR: Exception during Align: " << e.what() << endl;
+                    continue;
+                }
+
 
             #pragma omp critical
             {
                 std::cout << seq->name() << "\t" << seq->sequence().size() << "\t" << q_begin << "\t" << (q_end + 1)
-                    << "\t+\t" << referenceSequence.front()->name() << "\t" << reference.length()
-                    << "\t" << t_begin << "\t" << (t_end + 1) << "\t" << score << "\t" << (q_end - q_begin + 1)
+                    << "\t" << strand << "\t" << referenceSequence.front()->name() << "\t" << reference.length()
+                    << "\t" << (chain==chain_fwd ? t_begin : reference_rev.length() - t_end - 1)  
+                    << "\t" << (chain==chain_fwd ?  (t_end + 1) : reference_rev.length() - t_begin) 
+                    << "\t" << score << "\t" << (q_end - q_begin + 1)
                     << "\t60";
                 if (output_cigar) {
                     std::cout << "\tcg:Z:" << cigar;

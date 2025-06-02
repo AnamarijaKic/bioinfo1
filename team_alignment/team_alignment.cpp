@@ -54,7 +54,7 @@ namespace team {
                 int gap,
                 std::string* cigar,
                 unsigned int* target_begin){
-       
+
         int initialization;
         std::string query_str(query, query_len);
         std::string target_str(target, target_len);
@@ -91,7 +91,6 @@ namespace team {
             m[0][j].parent = INSERT;          
         }
 
-       
         std::string result;
         std::string compressed;
         int max_cost=std::numeric_limits<int>::min();
@@ -161,11 +160,12 @@ namespace team {
                     *cigar = compressed;
                 }
                 
+
                 // printAlignmentMatrix(query, query_len, target, target_len, m);
                 // if(cigar!= nullptr){ std::cout<<"CIGAR: "<<result<<std::endl<<std::endl; }
                 // if(cigar!= nullptr){ std::cout<<"CIGAR: "<<compressed<<std::endl<<std::endl; }
                 // std::cout<<"Score: "<<m[gi][gj].cost<<std::endl<<std::endl;
-
+            
                 return( m[gi][gj].cost ); /* Steven Skiena, http://www.algorithm.cs.sunysb.edu/computationalbiology/*/
                 break;
             case AlignmentType::local:  
@@ -197,7 +197,6 @@ namespace team {
                 if (target_begin != nullptr) {
                     *target_begin = local_j + 1;
                 }
-
 
                 if(cigar!=nullptr){
                     while (m[local_i][local_j].cost > 0) {
@@ -333,10 +332,6 @@ namespace team {
                     // Add the last group
                     compressed += std::to_string(count) + prev;
                     *cigar = compressed;
-                    
-                    
-                    
-                    
                 }
                 
                 // printAlignmentMatrix(query, query_len, target, target_len, m);
