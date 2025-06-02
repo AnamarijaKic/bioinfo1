@@ -563,7 +563,7 @@ int main(int argc, char* argv[]) {
             printBasicStatisticFASTA(file2);
         }
         
-        if (fragmentSequencesFASTA.size()<2){  std::cerr << "Need at least 2 sequences to pick two different ones.\n"; return 0;}
+        //if (fragmentSequencesFASTA.size()<2){  std::cerr << "Need at least 2 sequences to pick two different ones.\n"; return 0;}
 
         // Two random sequences from the second input file, with lengths not exceeding 5000 base pairs, need to be aligned and the result reported.
         // mt19937 rng(static_cast<unsigned int>(std::time(nullptr)));
