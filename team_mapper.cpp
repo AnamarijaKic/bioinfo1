@@ -293,7 +293,7 @@ vector<pair<unsigned int, unsigned int>> FindLIS(const vector<pair<unsigned int,
         for (size_t j = 0; j < i; ++j) {
             // Disallow multiple fragment positions (first) from matching to the same one
             if (matches[i].second > matches[j].second && lis[i] < lis[j] + 1 && matches[i].first != matches[j].first
-                && matches[i].first-matches[j].first<10000 && matches[i].second-matches[j].second<10000) {
+                && matches[i].first-matches[j].first<5000 && matches[i].second-matches[j].second<5000) {
                 lis[i] = lis[j] + 1;
                 prev[i] = j;
             }
@@ -430,19 +430,48 @@ int main(int argc, char* argv[]) {
     // PrintMinimizersVector(minimizers_rev, k);
 
     //filtering minimizers that show up too often
-    int frequency_threshold = static_cast<int>(f * reference.length());
-    for(unsigned int i=0; i<minimizers_rev.size(); i++){
-        unsigned int hash_fwd = get<0>(minimizers_fwd[i]);
-        unsigned int pos_fwd = get<1>(minimizers_fwd[i]);
-        bool strand_fwd = get<2>(minimizers_fwd[i]);
-        if (minimizer_frequencies_fwd[hash_fwd] <= frequency_threshold) {
+    int frequency_threshold_fwd = static_cast<int>(f * ref.GetUniqueMinimizers().size());
+    int frequency_threshold_rev = static_cast<int>(f * ref_rev.GetUniqueMinimizers().size());
+
+    // creating a vector intead of a map sto that we can sort it
+    std::vector<std::pair<unsigned int, int>> freq_vec_fwd(minimizer_frequencies_fwd.begin(), minimizer_frequencies_fwd.end());
+    std::vector<std::pair<unsigned int, int>> freq_vec_rev(minimizer_frequencies_rev.begin(), minimizer_frequencies_rev.end());
+
+    // sorting minimizers by frequency
+    std::sort(freq_vec_fwd.begin(), freq_vec_fwd.end(),
+        [](const auto& a, const auto& b) {
+            return a.second > b.second; // descending
+        });
+
+    // banned_hashes_fwd => frequency_threshold_fwd most common minimizers
+    unordered_set<unsigned int> banned_hashes_fwd;
+    for (int i = 0; i < std::min(frequency_threshold_fwd, static_cast<int>(freq_vec_fwd.size())); ++i) {
+        banned_hashes_fwd.insert(freq_vec_fwd[i].first);
+    }
+
+    // reference_index_fwd => only minimizers not in banned_hashes_fwd
+    for (const auto& [hash_fwd, pos_fwd, strand_fwd] : minimizers_fwd) {
+        if (!banned_hashes_fwd.count(hash_fwd)) {
             reference_index_fwd[hash_fwd].insert({pos_fwd, strand_fwd});
         }
+    }
 
-        unsigned int hash_rev = get<0>(minimizers_rev[i]);
-        unsigned int pos_rev = get<1>(minimizers_rev[i]);
-        bool strand_rev = get<2>(minimizers_rev[i]);
-        if (minimizer_frequencies_rev[hash_rev] <= frequency_threshold) {
+    // for reverse complement
+    // sorting minimizers by frequency
+    std::sort(freq_vec_rev.begin(), freq_vec_rev.end(),
+        [](const auto& a, const auto& b) {
+            return a.second > b.second; // descending
+        });
+
+    // banned_hashes_rev => frequency_threshold_rev most common minimizers
+    unordered_set<unsigned int> banned_hashes_rev;
+    for (int i = 0; i < std::min(frequency_threshold_rev, static_cast<int>(freq_vec_rev.size())); ++i) {
+        banned_hashes_rev.insert(freq_vec_fwd[i].first);
+    }
+
+    // reference_index_rev => only minimizers not in banned_hashes_rev
+    for (const auto& [hash_rev, pos_rev, strand_rev] : minimizers_rev) {
+        if (!banned_hashes_rev.count(hash_rev)) {
             reference_index_rev[hash_rev].insert({pos_rev, strand_rev});
         }
     }
