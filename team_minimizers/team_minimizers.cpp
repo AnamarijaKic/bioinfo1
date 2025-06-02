@@ -159,7 +159,7 @@ namespace team {
                         
                         }
 
-                        auto& best = GetTupleWithMinFirst(end_window);
+                        auto best = GetTupleWithMinFirst(end_window);
                         minimizers.push_back(best);
                         unique_minmizers.insert(best);
 
@@ -182,7 +182,7 @@ namespace team {
                     window.push_back(make_tuple(mapp_bit, i+1, is_fwd));
 
                     if(i>=(window_len-1)){
-                        auto& best = GetTupleWithMinFirst(window);
+                        auto best = GetTupleWithMinFirst(window);
                         minimizers.push_back(best);
                         unique_minmizers.insert(best);
 
@@ -211,7 +211,7 @@ namespace team {
 
                         end_window.push_back(make_tuple(mapp_bit, i+1, is_fwd)); 
                     }
-                    auto& best = GetTupleWithMinFirst(end_window);
+                    auto best = GetTupleWithMinFirst(end_window);
                     minimizers.push_back(best);
                     unique_minmizers.insert(best);
 

@@ -421,7 +421,7 @@ int main(int argc, char* argv[]) {
     // PrintMinimizersVector(minimizers_fwd, k);
 
     //complement of reference
-    auto& reference_rev = ReverseComplement(reference);
+    auto reference_rev = ReverseComplement(reference);
     //minimizers in the complement reference
     KMER ref_rev(false);
     auto minimizers_rev = ref_rev.Minimize(reference_rev.c_str(), reference_rev.length(), k, w);
